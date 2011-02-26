@@ -1,69 +1,35 @@
-require "base64"
-require "net/http"
 Net::HTTP.version_1_2
 
 class RestAuthConnection
   @@connection = nil
   
-  def initialize ( host, user, password, use_cookies=true )
+  def initialize ( host, user, password )
     @host = host.gsub(/[#{'\/'}]+$/, '')
     @user = user
     @password = password
     self.set_credentials( user, password )
-    @use_cookies = use_cookies
     puts 'Initialized RestAuthConnection'
   end
   
-  def get_connection( host=@host, user=@user, password=@password, use_cookies=@use_cookies )
+  def get_connection( host=@host, user=@user, password=@password )
     if ! defined?(@@connection)
-      @@connection = RestAuthConnection.new( host, user, password, use_cookies )
+      @@connection = RestAuthConnection.new( host, user, password )
     end
     puts 'RestAuthConnection::get_connection called'
     return @@connection
   end
   
   def set_credentials( user, password )
-    @cookie = false # invalidate any old cookie
     @user = user
     @password = password
-    @auth_header = Base64.encode64( user + ':' + password )
+    @auth_header = 'Basic ' + Base64.encode64( user + ':' + password )
     puts 'RestAuthConnection::set_credentials called'
   end
   
-  def use_cookie()
-    if ! ( @cookie && @use_cookies )
-      puts 'RestAuthConnection::use_cookie called (returning false 1)'
-      return false
-    end
-    
-    now = Time.new();
-    if ( @cookie.expires < now )
-      puts 'RestAuthConnection::use_cookie called (returning false 2)'
-      return false
-    end
-    
-    if @cookie.cookies.include?(:'Max-Age')
-      max_age = @cookie.cookies['Max-Age']
-      if ( @cookie_stamp + max_age < now )
-        puts 'RestAuthConnection::use_cookie called (returning false 3)'
-        return false
-      end
-    end
-    
-    puts 'RestAuthConnection::use_cookie called (returning true)'
-    return true
-  end
-
   def send( request )
     # add headers present with all methods
     
-    headers = { 'Accept' => 'application/json' }
-    
-    if self.use_cookie()
-      headers['Cookie'] = 'sessionid=' + @cookie.cookies['sessionid']
-    else
-      headers['Authorization'] = 'Basic ' + @auth_header
-    end
+    headers = { 'Accept' => 'application/json', 'Authorization' => @auth_header }
     headers.each { |key,value|
       request.add_field( key, value )
     }
@@ -77,14 +43,6 @@ class RestAuthConnection
     if ! response.body.nil?
       puts 'Got BODY: '+response.body
     end
-
-    # handle cookie
-    #if @response_headers.include?(:'Set-Cookie')
-      # TODO cookies later!
-      # : invalid code!
-      #@cookie = http_parse_cookie( @response_headers['Set-Cookie'] )
-    #  @cookie_stamp = Time.new()
-    #end
 
     puts 'RestAuthConnection::send called (before case)'
     # handle error status codes
@@ -101,6 +59,9 @@ class RestAuthConnection
     return response
   end
 
+  # params = querystring; {Ruby: dict -> querystring - method??}
+  # an den server werden *nur* key->value - pairs gesendet.
+  # zurückkommen können auch str & str-array
   def get( urlpath, params = {}, headers = {} )
     headers['Content-Type'] = 'application/json'
     
@@ -129,15 +90,18 @@ class RestAuthConnection
 end
 
 class RestAuthResource
-  @prefix = nil
-  
+  @@prefix = nil
+  @conn = nil
+ 
+# improvise abstract classes
   private_class_method :new
   def RestAuthResource.inherited(subclass)
     subclass.instance_eval { public_class_method :new }
   end
-  
+
+
   def _get( url, params = {}, headers = {} )
-    url = @prefix + url
+    url = @@prefix + url
     puts 'RestAuthResource::_get called'
     return @conn.get( url, params, headers )
   end

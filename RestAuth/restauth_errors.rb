@@ -1,14 +1,3 @@
-=begin
-This file collects all exceptions not directly related to a RestAuthUser or a RestAuthGroup
-
-@package ruby-restauth
-=end
-
-=begin
-Common superclass for all RestAuth related exceptions.
-
-@package ruby-restauth
-=end
 class RestAuthException
   private_class_method :new
   def RestAuthException.inherited(subclass)

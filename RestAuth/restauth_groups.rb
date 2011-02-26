@@ -1,57 +1,20 @@
-=begin
-Code related to RestAuthGroup handling.
+require '/home/astra/git/restauth/ruby/RestAuth/restauth_common.rb'
+require '/home/astra/git/restauth/ruby/RestAuth/restauth_users.rb'
 
-@package ruby-restauth
-=end
-
-=begin
-imports required for the code here.
-=end
-require '/home/astra/git/repository/ruby/RestAuth/restauth_common.rb'
-require '/home/astra/git/repository/ruby/RestAuth/restauth_users.rb'
-
-=begin
-Thrown when a group is not found.
-
-@package ruby-restauth
-=end
+# Thrown when a group is not found.
 class RestAuthGroupNotFound < RestAuthResourceNotFound
 end
 
-=begin
-Thrown when a group that is supposed to be created already exists.
-
-@package ruby-restauth
-=end
+# Thrown when a group that is supposed to be created already exists.
 class RestAuthGroupExists < RestAuthResourceConflict
 end
 
-=begin
-This class acts as a frontend for actions related to groups.
-
-@package ruby-restauth
-=end
+# This class acts as a frontend for actions related to groups.
 class RestAuthGroup < RestAuthResource
   @@prefix = '/groups/'
 
 =begin
-  Factory method that creates a new group in RestAuth.
-  
-  @param RestAuthConnection $conn A connection to a RestAuth service.
-  @param string $name The name of the new group.
-  
-  @param string $name The name of the new group
-  @throws {@link RestAuthGroupExists} If the group already exists.
-  @throws {@link RestAuthBadRequest} When the request body could not be
-    parsed.
-  @throws {@link RestAuthUnauthorized} When service authentication
-    failed.
-  @throws {@link RestAuthForbidden} When service authentication failed
-    and authorization is not possible from this host.
-  @throws {@link RestAuthInternalServerError} When the RestAuth service
-    returns HTTP status code 500
-  @throws {@link RestAuthUnknownStatus} If the response status is
-    unknown.
+# Factory method that creates a new group in RestAuth.
 #=end
   def create( conn, name )
     $resp = $conn->post( '/groups/', array( 'group' => $name ) );
@@ -64,20 +27,6 @@ class RestAuthGroup < RestAuthResource
 
 =begin
   Factory method that gets an existing user from RestAuth.
-  
-  @param RestAuthConnection $conn A connection to a RestAuth service.
-  @param string $name The name of the new group.
-  
-  @throws {@link RestAuthBadRequest} When the request body could not
-    be parsed.
-  @throws {@link RestAuthUnauthorized} When service authentication
-    failed.
-  @throws {@link RestAuthForbidden} When service authentication failed
-    and authorization is not possible from this host.
-  @throws {@link RestAuthInternalServerError} When the RestAuth service
-    returns HTTP status code 500
-  @throws {@link RestAuthUnknownStatus} If the response status is
-    unknown.
 #=end
   def get( conn, name )
     $resp = $conn->get( '/groups/' . $name . '/' );
@@ -91,22 +40,6 @@ class RestAuthGroup < RestAuthResource
 =begin
   Factory method that gets all groups for this service known to 
   RestAuth.
-  
-  @param RestAuthConnection $conn A connection to a RestAuth service.
-  @param string $user Limit the output to groups where the user with 
-    this name is a member of.
-  @param boolean $recursive Disable recursive group parsing.
-  
-  @throws {@link RestAuthBadRequest} When the request body could not be
-    parsed.
-  @throws {@link RestAuthUnauthorized} When service authentication
-    failed.
-  @throws {@link RestAuthForbidden} When service authentication failed
-    and authorization is not possible from this host.
-  @throws {@link RestAuthInternalServerError} When the RestAuth service
-    returns HTTP status code 500
-  @throws {@link RestAuthUnknownStatus} If the response status is
-    unknown.
 #=end
   def get_all( $conn, $user=NULL, $recursive=true )
     $params = array();
@@ -141,19 +74,6 @@ class RestAuthGroup < RestAuthResource
 
 =begin
   Get all members of this group.
-  
-  @param boolean $recursive Set to false to disable recurive group
-    parsing.
-  @return array Array of {@link RestAuthUser users}.
-  
-  @throws {@link RestAuthUnauthorized} When service authentication
-    failed.
-  @throws {@link RestAuthForbidden} When service authentication failed
-    and authorization is not possible from this host.
-  @throws {@link RestAuthInternalServerError} When the RestAuth service
-    returns HTTP status code 500
-  @throws {@link RestAuthUnknownStatus} If the response status is
-    unknown.
 #=end
   def get_members( $recursive = true )
     $params = array();
@@ -175,21 +95,6 @@ class RestAuthGroup < RestAuthResource
 
 =begin
   Add a user to this group.
-  
-  @param RestAuthUser $user The user to add
-  @param boolean $autocreate Set to false if you don't want to
-    automatically create the group if it doesn't exist.
-  
-  @throws {@link RestAuthBadRequest} When the request body could not be
-    parsed.
-  @throws {@link RestAuthUnauthorized} When service authentication
-    failed.
-  @throws {@link RestAuthForbidden} When service authentication failed
-    and authorization is not possible from this host.
-  @throws {@link RestAuthInternalServerError} When the RestAuth service
-    returns HTTP status code 500
-  @throws {@link RestAuthUnknownStatus} If the response status is
-    unknown.
 #=end
   def add_user( $user, $autocreate = true )
     $params = array( 'user' => $user->name );
@@ -214,20 +119,6 @@ class RestAuthGroup < RestAuthResource
 
 =begin
   Check if the named user is a member.
-  
-  @param RestAuthUser $user The user in question.
-  @param boolean $recursive Set to false to disable recurive group
-    parsing.
-  @return boolean true if the user is a member, false if not
-  
-  @throws {@link RestAuthUnauthorized} When service authentication
-    failed.
-  @throws {@link RestAuthForbidden} When service authentication failed
-    and authorization is not possible from this host.
-  @throws {@link RestAuthInternalServerError} When the RestAuth service
-    returns HTTP status code 500
-  @throws {@link RestAuthUnknownStatus} If the response status is
-    unknown.
 #=end
   def is_member( $user, $recursive = true )
     $params = array();
@@ -256,15 +147,6 @@ class RestAuthGroup < RestAuthResource
 
 =begin
   Delete this group.
-  
-  @throws {@link RestAuthUnauthorized} When service authentication
-    failed.
-  @throws {@link RestAuthForbidden} When service authentication failed
-    and authorization is not possible from this host.
-  @throws {@link RestAuthInternalServerError} When the RestAuth service
-    returns HTTP status code 500
-  @throws {@link RestAuthUnknownStatus} If the response status is
-    unknown.
 #=end
   def remove()
     $resp = $this->_delete( $this->name );
@@ -277,17 +159,6 @@ class RestAuthGroup < RestAuthResource
 
 =begin
   Remove the given user from the group.
-  
-  @param RestAuthUser $user The user to remove
-  
-  @throws {@link RestAuthUnauthorized} When service authentication
-    failed.
-  @throws {@link RestAuthForbidden} When service authentication failed
-    and authorization is not possible from this host.
-  @throws {@link RestAuthInternalServerError} When the RestAuth service
-    returns HTTP status code 500
-  @throws {@link RestAuthUnknownStatus} If the response status is
-    unknown.
 #=end
   def remove_user( $user )
     $url = $this->name . '/users/' . $user->name;
@@ -312,21 +183,6 @@ class RestAuthGroup < RestAuthResource
 
 =begin
   Add a group to this group.
-  
-  @param RestAuthGroup $group The group to add
-  @param boolean $autocreate Set to false if you don't want to
-    automatically create the group if it doesn't exist.
-  
-  @throws {@link RestAuthBadRequest} When the request body could not be
-    parsed.
-  @throws {@link RestAuthUnauthorized} When service authentication
-    failed.
-  @throws {@link RestAuthForbidden} When service authentication failed
-    and authorization is not possible from this host.
-  @throws {@link RestAuthInternalServerError} When the RestAuth service
-    returns HTTP status code 500
-  @throws {@link RestAuthUnknownStatus} If the response status is
-    unknown.
 #=end
   def add_group( $group, $autocreate = true )
     $params = array( 'group' => $group->name );
