@@ -1,3 +1,5 @@
+require "base64"
+require "net/http"
 Net::HTTP.version_1_2
 
 class RestAuthConnection
