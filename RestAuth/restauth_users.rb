@@ -1,5 +1,5 @@
-require '/home/astra/git/restauth/ruby/RestAuth/restauth_errors.rb'
-require '/home/astra/git/restauth/ruby/RestAuth/restauth_common.rb'
+require 'RestAuth/restauth_errors'
+require 'RestAuth/restauth_common'
 
 class RestAuthUserNotFound < RestAuthResourceNotFound
 end
@@ -23,12 +23,16 @@ class RestAuthUser < RestAuthResource
   def create( name, password, conn = @conn )
     params = array( 'user' => name, 'password' => password )
     resp = conn.post( '/users/', params )
-    switch ( resp.getResponseCode() ) {
-      case 201: return new RestAuthUser( conn, name )
-      case 409: throw new RestAuthUserExists( resp )
-      case 412: throw new RestAuthPreconditionFailed( resp )
-      default:  throw new RestAuthUnknownStatus( resp )
-    }
+    case resp.getResponseCode()
+    when 201
+      return RestAuthUser.new(conn, name)
+    when 409
+      raise RestAuthUserExists.new(resp)
+    when 412
+      raise RestAuthPreconditionFailed(resp)
+    else
+      raise RestAuthUnknownStatus(resp)
+    end
   end
 
 =begin
@@ -40,12 +44,12 @@ class RestAuthUser < RestAuthResource
     resp = conn.get( '/users/#{name}/' )
 
     case resp.getResponseCode()
-      when 204
-        return RestAuthUser.new(conn, name)
-      when 404
-        raise RestAuthUserNotFound.new(resp)
-      else
-        raise RestAuthUnknownStatus.new(resp)
+    when 204
+      return RestAuthUser.new(conn, name)
+    when 404
+      raise RestAuthUserNotFound.new(resp)
+    else
+      raise RestAuthUnknownStatus.new(resp)
     end
   end
 
@@ -53,17 +57,18 @@ class RestAuthUser < RestAuthResource
   Factory method that gets all users known to RestAuth.
 =end
   def get_all( conn )
-    resp = conn->get( '/users/' );
+    resp = conn.get( '/users/' )
 
-    switch ( resp->getResponseCode() ) {
-      case 200:
-        response = array();
-        foreach( json_decode( resp->getBody() ) as name ) {
-          response[] = new RestAuthUser( conn, name );
-        }
-        return response;
-      default: throw new RestAuthUnknownStatus( resp );
-    }
+    case resp.getResponseCode()
+    when 200
+      response = array()
+      json_decode(resp.getBody()).each { |name|
+        response[] = RestAuthUser.new(conn, name)
+      }
+      return response
+    else
+      raise RestAuthUnknownStatus.new(resp)
+    end
   end
 
 =begin
@@ -75,8 +80,8 @@ class RestAuthUser < RestAuthResource
 =end
   def initialize( conn, name = "" )
     super
-    @conn = conn;
-    @name = name;
+    @conn = conn
+    @name = name
   end
 
 =begin
@@ -85,14 +90,18 @@ class RestAuthUser < RestAuthResource
   @param string $password The new password.
 =end
   def set_password( password )
-    resp = $this->_put( $this->name, array( 'password' => $password ) );
+    resp = _put(name, array( 'password' => password ) )
 
-    switch ( $resp->getResponseCode() ) {
-      case 204: return;
-      case 404: throw new RestAuthUserNotFound( $resp );
-      case 412: throw new RestAuthPreconditionFailed( $resp );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+    case resp.getResponseCode()
+    when 204
+      return
+    when 404
+      raise RestAuthUserNotFound(resp)
+    when 412
+      raise RestAuthPreconditionFailed(resp)
+    else
+      raise RestAuthUnknownStatus(resp)
+    end
   end
 
 =begin
@@ -101,25 +110,33 @@ class RestAuthUser < RestAuthResource
   The method does not throw an error if the user does not exist at all,
   it also returns false in this case.
 =end
-  def verify_password( $password ) {
-    $resp = $this->_post( $this->name, array( 'password' => $password ) );
-    switch ( $resp->getResponseCode() ) {
-      case 204: return true;
-      case 404: return false;
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+  def verify_password( password )
+    resp = _post(name, array( 'password' => password ) )
+    
+    case resp.getResponseCode()
+    when 204
+      return true;
+    when 404
+      return false;
+    else
+      raise RestAuthUnknownStatus(resp)
+    end
   end
 
 =begin
   Delete this user.
 =end
   def remove()
-    resp = $this->_delete( $this->name );
-    switch ( $resp->getResponseCode() ) {
-      case 204: return;
-      case 404: throw new RestAuthUserNotFound( $resp );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+    resp = _delete( name )
+    
+    case resp.getResponseCode()
+      when 204
+        return
+      when 404
+        raise RestAuthUserNotFound(resp)
+      else
+        raise RestAuthUnknownStatus(resp)
+      end
   end
 
 =begin
