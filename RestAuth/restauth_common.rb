@@ -1,5 +1,6 @@
 require "base64"
 require "net/http"
+require "json"
 Net::HTTP.version_1_2
 
 class RestAuthConnection
@@ -24,7 +25,7 @@ class RestAuthConnection
   def set_credentials( user, password )
     @user = user
     @password = password
-    @auth_header = 'Basic ' + Base64.encode64( user + ':' + password )
+    @auth_header = 'Basic ' + Base64.encode64( user + ':' + password ).strip
     puts 'CALLINFO RestAuthConnection::set_credentials called'
   end
   
@@ -46,13 +47,13 @@ class RestAuthConnection
     end
 
     # handle error status codes
-    case response.code
-      when 401
-      raise new RestAuthUnauthorized( response )
-      when 406
-      raise new RestAuthNotAcceptable( response )
-      when 500
-      raise new RestAuthInternalServerError( response )
+    case response.code.to_i
+    when 401
+      raise RestAuthUnauthorized.new( response )
+    when 406
+      raise RestAuthNotAcceptable.new( response )
+    when 500
+      raise RestAuthInternalServerError.new( response )
     end
 
     return response
@@ -72,7 +73,7 @@ class RestAuthConnection
     request = Net::HTTP::Get.new( urlpath, headers )
     response = self.send( request )
     
-    case response.code
+    case response.code.to_i
       when 400
         raise RestAuthBadRequest.new( response )
       when 411
@@ -93,12 +94,12 @@ class RestAuthConnection
     #url = @host + self.sanitize_url( url )
     #uri = URI.parse(url)
     
-    # TODO fix (currently copied from GET)
     puts 'REQUEST creating new Net::HTTP::Post request -> '+urlpath
     request = Net::HTTP::Post.new( urlpath, headers )
+    request.body = params.to_json
     response = self.send( request )
     
-    case response.code
+    case response.code.to_i
       when 400
         raise RestAuthBadRequest.new( response )
       when 411
@@ -122,9 +123,10 @@ class RestAuthConnection
     # TODO fix (currently copied from GET)
     puts 'REQUEST creating new Net::HTTP::Put request -> '+urlpath
     request = Net::HTTP::Put.new( urlpath, headers )
+    request.body = params.to_json
     response = self.send( request )
     
-    case response.code
+    case response.code.to_i
       when 400
         raise RestAuthBadRequest.new( response )
       when 411
@@ -148,7 +150,7 @@ class RestAuthConnection
     request = Net::HTTP::Delete.new( urlpath, headers )
     response = self.send( request )
     
-    case response.code
+    case response.code.to_i
       when 400
         raise RestAuthBadRequest.new( response )
       when 411
@@ -174,7 +176,6 @@ class RestAuthConnection
 end
 
 class RestAuthResource
-  @@prefix = nil
   @conn = nil
  
 # improvise abstract classes
@@ -185,12 +186,22 @@ class RestAuthResource
 
 
   def _get( url, params = {}, headers = {} )
-    url = @@prefix + url
     puts 'CALLINFO RestAuthResource::_get called'
-    return @conn.get( url, params, headers )
+    return @conn.get( @@prefix + url, params, headers )
   end
   
   def _post( url, params = {}, headers = {} )
-    puts 'CALLINFO STUB RestAuthResource::_post called'
+    puts 'CALLINFO RestAuthResource::_post called'
+    return @conn.post( @@prefix + url, params, headers )
+  end
+  
+  def _put( url, params = {}, headers = {} )
+    puts 'CALLINFO RestAuthResource::_put called'
+    return @conn.put( @@prefix + url, params, headers )
+  end
+  
+  def _delete( url, headers = {} )
+    puts 'CALLINFO RestAuthResource::_put called'
+    return @conn.put( @@prefix + url, headers )
   end
 end

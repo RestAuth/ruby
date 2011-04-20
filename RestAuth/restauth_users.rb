@@ -1,5 +1,6 @@
 require 'RestAuth/restauth_errors'
 require 'RestAuth/restauth_common'
+require 'json'
 
 class RestAuthUserNotFound < RestAuthResourceNotFound
 end
@@ -15,23 +16,26 @@ end
 
 class RestAuthUser < RestAuthResource
   @@prefix = '/users/'
+  attr_accessor :conn, :name
 
 =begin
   Factory method that creates a new user in the RestAuth database and
   throws {@link RestAuthUserExists} if the user already exists.
 =end
   def create( name, password, conn = @conn )
-    params = array( 'user' => name, 'password' => password )
-    resp = conn.post( '/users/', params )
-    case resp.getResponseCode()
+    params = { 'user' => name, 'password' => password }
+    resp = conn.post( @@prefix, params )
+    #resp = conn.post( '/users/', params )
+    
+    case resp.code.to_i
     when 201
       return RestAuthUser.new(conn, name)
     when 409
       raise RestAuthUserExists.new(resp)
     when 412
-      raise RestAuthPreconditionFailed(resp)
+      raise RestAuthPreconditionFailed.new(resp)
     else
-      raise RestAuthUnknownStatus(resp)
+      raise RestAuthUnknownStatus.new(resp)
     end
   end
 
@@ -41,9 +45,9 @@ class RestAuthUser < RestAuthResource
   if not.
 =end
   def get( name = @name, conn = @conn )
-    resp = conn.get( '/users/#{name}/' )
+    resp = conn.get( @@prefix+name+'/' )
 
-    case resp.getResponseCode()
+    case resp.code.to_i
     when 204
       return RestAuthUser.new(conn, name)
     when 404
@@ -56,14 +60,14 @@ class RestAuthUser < RestAuthResource
 =begin
   Factory method that gets all users known to RestAuth.
 =end
-  def get_all( conn )
-    resp = conn.get( '/users/' )
+  def get_all( conn = @conn )
+    resp = conn.get( @@prefix )
 
-    case resp.getResponseCode()
+    case resp.code.to_i
     when 200
-      response = array()
-      json_decode(resp.getBody()).each { |name|
-        response[] = RestAuthUser.new(conn, name)
+      response = Array.new
+      JSON.parse(resp.body).each { |name|
+        response.push( RestAuthUser.new(conn, name) )
       }
       return response
     else
@@ -78,7 +82,7 @@ class RestAuthUser < RestAuthResource
   <b>Note:</b> The constructor does not verify if the user exists, use
   {@link get} or {@link get_all} if you wan't to be sure it exists.
 =end
-  def initialize( conn, name = "" )
+  def initialize( conn, name = nil )
     super
     @conn = conn
     @name = name
@@ -90,17 +94,17 @@ class RestAuthUser < RestAuthResource
   @param string $password The new password.
 =end
   def set_password( password )
-    resp = _put(name, array( 'password' => password ) )
+    resp = @conn.put(@@prefix+name+'/', { 'password' => password } )
 
-    case resp.getResponseCode()
+    case resp.code.to_i
     when 204
       return
     when 404
-      raise RestAuthUserNotFound(resp)
+      raise RestAuthUserNotFound.new(resp)
     when 412
-      raise RestAuthPreconditionFailed(resp)
+      raise RestAuthPreconditionFailed.new(resp)
     else
-      raise RestAuthUnknownStatus(resp)
+      raise RestAuthUnknownStatus.new(resp)
     end
   end
 
@@ -111,15 +115,15 @@ class RestAuthUser < RestAuthResource
   it also returns false in this case.
 =end
   def verify_password( password )
-    resp = _post(name, array( 'password' => password ) )
+    resp = @conn.post(@@prefix+name+'/', { 'password' => password } )
     
-    case resp.getResponseCode()
+    case resp.code.to_i
     when 204
       return true;
     when 404
       return false;
     else
-      raise RestAuthUnknownStatus(resp)
+      raise RestAuthUnknownStatus.new(resp)
     end
   end
 
@@ -127,15 +131,15 @@ class RestAuthUser < RestAuthResource
   Delete this user.
 =end
   def remove()
-    resp = _delete( name )
+    resp = self._delete( name )
     
     case resp.getResponseCode()
       when 204
         return
       when 404
-        raise RestAuthUserNotFound(resp)
+        raise RestAuthUserNotFound.new(resp)
       else
-        raise RestAuthUnknownStatus(resp)
+        raise RestAuthUnknownStatus.new(resp)
       end
   end
 
@@ -234,4 +238,3 @@ class RestAuthUser < RestAuthResource
   end
 =end
 end
-

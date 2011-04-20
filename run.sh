@@ -1,7 +1,7 @@
 #!/bin/bash
 
-TYPES="^>>|^?>"
-FLAGS="CALLINFO|HTTPCALL"
+TYPES="^>>|^\?>|=>"
+FLAGS="^CALLINFO|^HTTPCALL"
 
 # with debug output
 #irb -r ./RestAuth.rb test.rb

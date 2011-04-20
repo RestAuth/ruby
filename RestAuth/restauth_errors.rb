@@ -1,11 +1,11 @@
-class RestAuthException
+class RestAuthException < Exception
   private_class_method :new
   def RestAuthException.inherited(subclass)
     subclass.instance_eval { public_class_method :new }
   end
 
   def initialize ( response )
-    @message = response.getBody()
+    @message = response.body
   end
 end
 
@@ -81,7 +81,7 @@ really happen and usually indicates a bug in the library.
 class RestAuthUnknownStatus < RestAuthInternalException
   def initialize ( response )
     super
-    @code = response.getResponseCode()
+    @code = response.code.to_i
   end
 end
 
