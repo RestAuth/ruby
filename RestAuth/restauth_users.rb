@@ -115,7 +115,7 @@ class RestAuthUser < RestAuthResource
   it also returns false in this case.
 =end
   def verify_password( password )
-    resp = @conn.post(@@prefix+name+'/', { 'password' => password } )
+    resp = @conn.post(@@prefix+@name+'/', { 'password' => password } )
     
     case resp.code.to_i
     when 204
@@ -131,9 +131,9 @@ class RestAuthUser < RestAuthResource
   Delete this user.
 =end
   def remove()
-    resp = self._delete( name )
+    resp = @conn.delete(@@prefix+@name+'/' )
     
-    case resp.getResponseCode()
+    case resp.code.to_i
       when 204
         return
       when 404

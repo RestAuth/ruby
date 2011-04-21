@@ -184,24 +184,23 @@ class RestAuthResource
     subclass.instance_eval { public_class_method :new }
   end
 
-
-  def _get( url, params = {}, headers = {} )
+  def _get( prefix, url, params = {}, headers = {} )
     puts 'CALLINFO RestAuthResource::_get called'
-    return @conn.get( @@prefix + url, params, headers )
+    return @conn.get( prefix + url, params, headers )
   end
   
-  def _post( url, params = {}, headers = {} )
+  def _post( prefix, url, params = {}, headers = {} )
     puts 'CALLINFO RestAuthResource::_post called'
-    return @conn.post( @@prefix + url, params, headers )
+    return @conn.post( prefix + url, params, headers )
   end
   
-  def _put( url, params = {}, headers = {} )
+  def _put( prefix, url, params = {}, headers = {} )
     puts 'CALLINFO RestAuthResource::_put called'
-    return @conn.put( @@prefix + url, params, headers )
+    return @conn.put( prefix + url, params, headers )
   end
   
-  def _delete( url, headers = {} )
-    puts 'CALLINFO RestAuthResource::_put called'
-    return @conn.put( @@prefix + url, headers )
+  def _delete( prefix, url, headers = {} )
+    puts 'CALLINFO RestAuthResource::_delete called'
+    return @conn.delete( prefix + url, headers )
   end
 end

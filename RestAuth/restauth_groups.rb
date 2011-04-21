@@ -12,52 +12,65 @@ end
 # This class acts as a frontend for actions related to groups.
 class RestAuthGroup < RestAuthResource
   @@prefix = '/groups/'
+  attr_accessor :conn, :name
 
 =begin
-# Factory method that creates a new group in RestAuth.
-#=end
-  def create( conn, name )
-    $resp = $conn->post( '/groups/', array( 'group' => $name ) );
-    switch ( $resp->getResponseCode() ) {
-      case 201: return new RestAuthGroup( $conn, $name );
-      case 409: throw new RestAuthGroupExists( $resp );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+  Factory method that creates a new group in RestAuth.
+=end
+  def create( name, conn = @conn )
+    resp = conn.post( @@prefix, { 'group' => name } )
+    
+    case resp.code.to_i
+    when 201
+      return RestAuthGroup.new( conn, name )
+    when 409
+      raise RestAuthGroupExists.new( resp )
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
   end
 
 =begin
-  Factory method that gets an existing user from RestAuth.
-#=end
-  def get( conn, name )
-    $resp = $conn->get( '/groups/' . $name . '/' );
-    switch ( $resp->getResponseCode() ) {
-      case 204: return new RestAuthGroup( $conn, $name );
-      case 404: throw new RestAuthGroupNotFound( $resp );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+  Factory method that gets an existing group from RestAuth.
+=end
+  #def self.get( conn, name )
+  def get( name = @name, conn = @conn )
+    resp = conn.get( @@prefix+name+'/' )
+    
+    case resp.code.to_i
+    when 204
+      return RestAuthGroup.new( conn, name )
+    when 404
+      raise RestAuthGroupNotFound.new( resp )
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
   end
 
 =begin
   Factory method that gets all groups for this service known to 
   RestAuth.
-#=end
-  def get_all( $conn, $user=NULL, $recursive=true )
-    $params = array();
-    if ( $user )
-      $params['user'] = $user;
-#    if ( ! $recursive )
-#      $params['nonrecursive'] = 1;
-  
-    $resp = $conn->get( '/groups/', $params );
-    switch ( $resp->getResponseCode() ) {
-      case 200: 
-        $groups = array();
-        foreach ( json_decode( $resp->getBody() ) as $groupname ) {
-          $groups[] = new RestAuthGroup( $conn, $groupname );
-        }
-        return $groups;
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+=end
+  def get_all( recursive = true, user = nil, conn = @conn )
+    params = {}
+    if ( user )
+      params['user'] = user
+    end
+    if ! recursive
+      params['nonrecursive'] = 1
+    end
+    resp = conn.get( @@prefix, params )
+    
+    case resp.code.to_i
+    when 200
+      groups = Array.new()
+      JSON.parse(resp.body).each { |groupname|
+        groups.push( RestAuthGroup.new(conn, groupname) )
+      }
+      return groups
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
   end
 
 =begin
@@ -65,120 +78,135 @@ class RestAuthGroup < RestAuthResource
   
   @param RestAuthConnection $conn A connection to a RestAuth service.
   @param string $name The name of the new group.
-#=end
-  def __construct( $conn, $name )
-    $this->prefix = '/groups/';
-    $this->conn = $conn;
-    $this->name = $name;
+=end
+  def initialize( conn, name = nil )
+    super
+    @conn = conn
+    @name = name
   end
 
 =begin
   Get all members of this group.
-#=end
-  def get_members( $recursive = true )
-    $params = array();
-#    if ( ! $recursive )
-#      $params['nonrecursive'] = 1;
+=end
+  def get_members( recursive = true )
+    params = {};
+    if ( ! $recursive )
+      params['nonrecursive'] = 1
+    end
 
-    $resp = $this->_get( $this->name . '/users/', $params );
-    switch ( $resp->getResponseCode() ) {
-      case 200: 
-        $users = array();
-        foreach( json_decode( $resp->getBody() ) as $username ) {
-          $users[] = new RestAuthUser( $this->conn, $username );
-        }
-        return $users;
-      case 404: throw new RestAuthGroupNotFound( $resp );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+    resp = conn.get(@@prefix+name+'/users/', params)
+    
+    case resp.code.to_i
+    when 200
+      users = Array.new()
+      JSON.parse(resp.body).each { |username|
+        users.push(RestAuthUser.new(conn, username))
+      }
+      return users
+    when 404
+      raise RestAuthGroupNotFound.new( resp )
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
   end
 
 =begin
   Add a user to this group.
-#=end
-  def add_user( $user, $autocreate = true )
-    $params = array( 'user' => $user->name );
-#    if ( $autocreate )
-#      $params['autocreate'] = 1;
+=end
 
-    $resp = $this->_post( $this->name . '/users/', $params );
-    switch ( $resp->getResponseCode() ) {
-      case 204: return;
-      case 404: switch ( $resp->getHeader( 'Resource-Type' ) ) {
-        case 'User':
-          throw new RestAuthUserNotFound( $resp );
-        case 'Group': 
-          throw new RestAuthGroupNotFound( $resp );
-        default: 
-          throw new RestAuthBadResponse( $resp,
-            "Received 404 without Resource-Type header" );
-        }
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+  def add_user( user, autocreate = true )
+    params = { 'user' => user.name }
+    if ( autocreate )
+      params['autocreate'] = 1
+    end
+
+    resp = conn.post( @@prefix+name+'/users/', params)
+    
+    case resp.code.to_i
+    when 204
+      return
+    when 404
+      case resp.getHeader('Resource-Type')
+      when 'User'
+        raise RestAuthUserNotFound.new( resp )
+      when 'Group'
+        raise RestAuthGroupNotFound.new( resp )
+      else
+        # BUG TODO BUG
+        raise RestAuthBadResponse.new( resp, "Received 404 without Resource-Type header" )
+      end
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end 
   end
 
 =begin
   Check if the named user is a member.
-#=end
-  def is_member( $user, $recursive = true )
-    $params = array();
-    if ( ! $recursive )
-      $params['nonrecursive'] = 1;
+=end
+  def is_member( user, recursive = true )
+    params = {}
+    if ( ! recursive )
+      params['nonrecursive'] = 1
+    end
+    
+    resp = conn.get( @@prefix+name+'/users/'+user.name+'/', params)
 
-    $url = $this->name . '/users/' . $user->name;
-    $resp = $this->_get( $url, $params );
-
-    switch ( $resp->getResponseCode() ) {
-      case 204: return true;
-      case 404:
-        switch ( $resp->getHeader( 'Resource-Type' ) ) {
-          case 'User':
-            return false;
-          case 'Group': 
-            throw new RestAuthGroupNotFound( $resp );
-          default: 
-            throw new RestAuthBadResponse( $resp,
-              "Received 404 without Resource-Type header" );
-        }
-      default:
-        throw new RestAuthUnknownStatus( $resp );
-    }
+    case resp.code.to_i
+    when 204
+      return true
+    when 404
+      case resp.getHeader( 'Resource-Type' )
+      when 'User'
+        return false
+      when 'Group'
+        raise RestAuthGroupNotFound.new( resp )
+      else
+        # BUG TODO BUG
+        raise RestAuthBadResponse.new( resp, "Received 404 without Resource-Type header" )
+      end
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
   end
 
 =begin
   Delete this group.
-#=end
+=end
   def remove()
-    $resp = $this->_delete( $this->name );
-    switch ( $resp->getResponseCode() ) {
-      case 204: return;
-      case 404: throw new RestAuthGroupNotFound( $resp );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+    resp = conn.delete( @@prefix+@name+'/' )
+    
+    case resp.code.to_i
+    when 204
+      return
+    when 404
+      raise RestAuthGroupNotFound.new( resp )
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
   end
 
 =begin
   Remove the given user from the group.
-#=end
-  def remove_user( $user )
-    $url = $this->name . '/users/' . $user->name;
-    $resp = $this->_delete( $url );
-
-    switch ( $resp->getResponseCode() ) {
-      case 204: return;
-      case 404:
-        switch ( $resp->getHeader( 'Resource-Type' ) ) {
-          case 'User':
-            throw new RestAuthUserNotFound( $resp );
-          case 'Group': 
-            throw new RestAuthGroupNotFound( $resp );
-          default: 
-            throw new RestAuthBadResponse( $resp,
-              "Received 404 without Resource-Type header" );
-        }
-      default:
-        throw new RestAuthUnknownStatus( $resp );
-    }
+=end
+  def remove_user( user )
+    resp = conn.delete( @@prefix+name+'/users/'+user.name+'/' )
+    
+    case resp.code.to_i
+    when 204
+      return
+    when 404
+      case resp.getHeader( 'Resource-Type' )
+      when 'User'
+        raise RestAuthUserNotFound.new( resp )
+      when 'Group'
+        raise RestAuthGroupNotFound.new( resp )
+      else
+        # BUG TODO BUG
+        raise RestAuthBadResponse( resp, "Received 404 without Resource-Type header" )
+      end
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
   end
 
 =begin
