@@ -148,34 +148,38 @@ class RestAuthUser < RestAuthResource
   
   This method causes a single request to the RestAuth service and is
   a much better solution when fetching multiple properties.
-#=end
+=end
   def get_properties()
-    $url = "$this->name/props/";
-    $resp = $this->_get( $url );
+    resp = conn.get(@@prefix+name+'/props/')
     
-    switch ( $resp->getResponseCode() ) {
-      case 200:
-        $props = (array) json_decode( $resp->getBody() );
-        return $props;
-      case 404: throw new RestAuthUserNotFound( $resp );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+    case resp.code.to_i
+    when 200
+      return JSON.parse(resp.body)
+    when 404
+      raise RestAuthUserNotFound.new( resp )
+    else
+      raise RestAuthUnknownStatus.new( rest )
+    end
   end
   
 =begin
   Set a property for this user. This method overwrites any previous
   entry.
-#=end
-  def set_property( name, value )
-    $url = "$this->name/props/$name";
-    $params = array( 'value' => $value );
-    $resp = $this->_put( $url, $params );
-    switch ( $resp->getResponseCode() ) {
-      case 200: return $resp->getBody();
-      case 201: return;
-      case 404: throw new RestAuthUserNotFound( $resp );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+=end
+  def set_property( propname, value )
+    params = { 'value' => value }
+    resp = conn.put(@@prefix+name+'/props/'+propname+'/', params)
+    
+    case resp.code.to_i
+    when 200
+      return resp.body
+    when 201
+      return
+    when 404
+      raise RestAuthResourceNotFound.new( resp )
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
   end
 
 =begin
@@ -183,17 +187,21 @@ class RestAuthUser < RestAuthResource
   
   This method fails if the property already existed. Use {@link
   set_property} if you do not care if the property already exists.
-#=end
-  def create_property( name, value )
-    $url = "$this->name/props/";
-    $params = array( 'prop' => $name, 'value' =>$value );
-    $resp = $this->_post( $url, $params );
-    switch ( $resp->getResponseCode() ) {
-      case 201: return;
-      case 404: throw new RestAuthUserNotFound( $resp );
-      case 409: throw new RestAuthPropertyExists( $resp );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
+=end
+  def create_property( propname, value )
+    params = { 'prop' => propname, 'value' => value }
+    resp = conn.post( @@prefix+name+'/props/', params )
+    
+    case resp.code.to_i
+    when 201
+      return
+    when 404
+      raise RestAuthUserNotFound.new( resp )
+    when 409
+      raise RestAuthPropertyExists.new( resp )
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
   end
 
 =begin
@@ -202,39 +210,47 @@ class RestAuthUser < RestAuthResource
   <b>Note:</b> Each call to this function causes an HTTP request to 
   the RestAuth service. If you want to get many properties, consider
   using {@link get_properties}.
-#=end
-  def get_property( name ) {
-    $url = "$this->name/props/$name";
-    $resp = $this->_get( $url );
-
-    switch ( $resp->getResponseCode() ) {
-      case 200:
-        return json_decode( $resp->getBody() );
-      case 404:
-        switch ( $resp->getHeader( 'Resource-Type' ) ) {
-          case 'User':
-            throw new RestAuthUserNotFound( $resp );
-          case 'Property':
-            throw new RestAuthPropertyNotFound( $resp );
-        }
-        throw new RestAuthBadResponse( $resp,
-          "Received 404 without Resource-Type header" );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
-  }
+=end
+  def get_property( propname )
+    resp = conn.get(@@prefix+name+'/props/'+propname+'/')
+    
+    case resp.code.to_i
+    when 200
+      return JSON.parse( resp.body )
+    when 404
+      case resp.header['resource-type']
+      when 'user'
+        raise RestAuthUserNotFound.new( resp )
+      when 'property'
+        raise RestAuthPropertyNotFound.new( resp )
+      else
+        raise RestAuthBadResponse.new( resp, "Received 404 without Resource-Type header" )
+      end
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
+  end
 
 =begin
   Delete the named property.
-#=end
-  def del_property( name )
-    url = "$this->name/props/#{name}";
-    $resp = $this->_delete( $url );
-
-    switch ( $resp->getResponseCode() ) {
-      case 204: return;
-      case 404: throw new RestAuthUserNotFound( $resp );
-      default: throw new RestAuthUnknownStatus( $resp );
-    }
-  end
 =end
+  def del_property( propname )
+    resp = conn.delete(@@prefix+name+'/props/'+propname+'/')
+    
+    case resp.code.to_i
+    when 204
+      return
+    when 404
+      case resp.header['resource-type']
+      when 'user'
+        raise RestAuthUserNotFound.new( resp )
+      when 'property'
+        raise RestAuthPropertyNotFound.new( resp )
+      else
+        raise RestAuthBadResponse.new( resp, "Received 404 without Resource-Type header" )
+      end
+    else
+      raise RestAuthUnknownStatus.new( resp )
+    end
+  end
 end

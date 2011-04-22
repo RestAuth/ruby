@@ -113,4 +113,3 @@ end
 class RestAuthUnsupportedMediaType < RestAuthInternalException
  @code = 415
 end
-

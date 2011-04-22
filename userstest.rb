@@ -13,27 +13,55 @@ puts user.create( "Astra", "astra1" ).name + ' created'
 #puts user.create( "Astrd", "astra1" ).name + ' created'
 
 puts "---------- Reading User 'Astra' ----------"
-astra = user.get("Astra")
+# Properties schauen auf gross-kleinschreibung!!!
+astra = user.get("astra")
 puts astra.name
 
 puts "---------- Listing all users ----------"
 user.get_all
 
-puts "---------- Set Passwort to 'longsecretpassword' ----------"
-puts astra.set_password('longsecretpassword')
+#puts "---------- Set Passwort to 'longsecretpassword' ----------"
+#puts astra.set_password('longsecretpassword')
 
 # verify old password
-puts "---------- Verify 'astra1' ----------"
-puts astra.verify_password('astra1')
+#puts "---------- Verify 'astra1' ----------"
+#puts astra.verify_password('astra1')
 
 # verify new password
-puts "---------- Verify 'longsecretpassword' ----------"
-puts astra.verify_password('longsecretpassword')
+#puts "---------- Verify 'longsecretpassword' ----------"
+#puts astra.verify_password('longsecretpassword')
 
 # and reset
-puts "---------- Reset Passwort to 'astra1' ----------"
-puts astra.set_password('astra1')
+#puts "---------- Reset Passwort to 'astra1' ----------"
+#puts astra.set_password('astra1')
+
+## Testing properties
+puts "Set properties:"
+astra.get_properties.each{ |prop|
+  puts prop
+}
+
+puts "---------- Creating 'testprop' of 'Astra' ----------"
+astra.create_property("testprop", "booo!")
+
+puts "---------- Setting 'testprop' of 'Astra' ----------"
+astra.set_property("testprop", "booobooo!")
+
+puts "---------- Getting properties of 'Astra' ----------"
+astra.get_properties.each{ |prop, value|
+  puts prop+': '+value
+}
+
+puts "---------- Getting 'testprop' of 'Astra' ----------"
+puts astra.get_property("testprop")
+
+puts "---------- Removing 'testprop' of 'Astra' ----------"
+astra.del_property("testprop")
+
+puts "---------- Getting properties of 'Astra' ----------"
+astra.get_properties.each{ |prop|
+  puts prop
+}
 
 puts "---------- Deleting User 'Astra' ----------"
 puts astra.remove()
-#resp = conn.delete("/users/astra/")
