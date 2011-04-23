@@ -25,7 +25,6 @@ class RestAuthUser < RestAuthResource
   def create( name, password, conn = @conn )
     params = { 'user' => name, 'password' => password }
     resp = conn.post( @@prefix, params )
-    #resp = conn.post( '/users/', params )
     
     case resp.code.to_i
     when 201
@@ -169,10 +168,14 @@ class RestAuthUser < RestAuthResource
   def set_property( propname, value )
     params = { 'value' => value }
     resp = conn.put(@@prefix+name+'/props/'+propname+'/', params)
+    #params = "value="+value.to_s
+    #resp = conn.put(@@prefix+name+'/props/'+propname+'/', params, headers = {'Content-Type' => 'application/x-www-form-urlencoded'})
     
     case resp.code.to_i
     when 200
-      return resp.body
+      # As Ruby does not recognizes "string" as a json-object
+      #return JSON.parse( resp.body )
+      return resp.body.delete("\"")
     when 201
       return
     when 404
@@ -213,10 +216,13 @@ class RestAuthUser < RestAuthResource
 =end
   def get_property( propname )
     resp = conn.get(@@prefix+name+'/props/'+propname+'/')
+    #resp = conn.get(@@prefix+name+'/props/'+propname+'/', headers = {'Content-Type' => 'application/x-www-form-urlencoded'})
     
     case resp.code.to_i
     when 200
-      return JSON.parse( resp.body )
+      # As Ruby does not recognizes "string" as a json-object
+      #return JSON.parse( resp.body )
+      return resp.body.delete("\"")
     when 404
       case resp.header['resource-type']
       when 'user'

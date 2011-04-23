@@ -1,6 +1,5 @@
 require "base64"
 require "net/http"
-require "json"
 Net::HTTP.version_1_2
 
 class RestAuthConnection
@@ -63,7 +62,10 @@ class RestAuthConnection
   # an den server werden *nur* key->value - pairs gesendet.
   # zurückkommen können auch str & str-array
   def get( urlpath, params = {}, headers = {} )
-    headers['Content-Type'] = 'application/json'
+    if ( ! headers['Content-Type'] )
+      headers['Content-Type'] = 'application/json'
+      params = params.to_json
+    end
     
     ## will fix later
     #url = @host + self.sanitize_url( url )
@@ -88,15 +90,14 @@ class RestAuthConnection
   # an den server werden *nur* key->value - pairs gesendet.
   # zurückkommen können auch str & str-array
   def post( urlpath, params, headers = {} )
-    headers['Content-Type'] = 'application/json'
-    
-    ## will fix later
-    #url = @host + self.sanitize_url( url )
-    #uri = URI.parse(url)
+    if ( ! headers['Content-Type'] )
+      headers['Content-Type'] = 'application/json'
+      params = params.to_json
+	end
     
     puts 'REQUEST creating new Net::HTTP::Post request -> '+urlpath
     request = Net::HTTP::Post.new( urlpath, headers )
-    request.body = params.to_json
+    request.body = params
     response = self.send( request )
     
     case response.code.to_i
@@ -114,16 +115,14 @@ class RestAuthConnection
   # an den server werden *nur* key->value - pairs gesendet.
   # zurückkommen können auch str & str-array
   def put( urlpath, params, headers = {} )
-    headers['Content-Type'] = 'application/json'
-    
-    ## will fix later
-    #url = @host + self.sanitize_url( url )
-    #uri = URI.parse(url)
-    
-    # TODO fix (currently copied from GET)
+    if ( ! headers['Content-Type'] )
+      headers['Content-Type'] = 'application/json'
+	  params = params.to_json
+	end
+
     puts 'REQUEST creating new Net::HTTP::Put request -> '+urlpath
     request = Net::HTTP::Put.new( urlpath, headers )
-    request.body = params.to_json
+    request.body = params
     response = self.send( request )
     
     case response.code.to_i
@@ -141,11 +140,11 @@ class RestAuthConnection
   # an den server werden *nur* key->value - pairs gesendet.
   # zurückkommen können auch str & str-array
   def delete( urlpath, headers = {} )
-    ## will fix later
-    #url = @host + self.sanitize_url( url )
-    #uri = URI.parse(url)
+    if ( ! headers['Content-Type'] )
+      headers['Content-Type'] = 'application/json'
+	  params = params.to_json
+	end
     
-    # TODO fix (currently copied from GET)
     puts 'REQUEST creating new Net::HTTP::Delete request -> '+urlpath
     request = Net::HTTP::Delete.new( urlpath, headers )
     response = self.send( request )

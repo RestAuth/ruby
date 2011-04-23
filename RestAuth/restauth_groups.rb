@@ -94,7 +94,7 @@ class RestAuthGroup < RestAuthResource
       params['nonrecursive'] = 1
     end
 
-    resp = conn.get(@@prefix+name+'/users/', params)
+    resp = conn.get( @@prefix+name+'/users/', params )
     
     case resp.code.to_i
     when 200
