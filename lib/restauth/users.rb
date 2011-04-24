@@ -1,5 +1,5 @@
-require 'restauth_errors'
-require 'restauth_common'
+require 'restauth/errors'
+require 'restauth/common'
 require 'json'
 
 class RestAuthUserNotFound < RestAuthResourceNotFound

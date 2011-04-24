@@ -3,10 +3,17 @@
 require 'yaml'
 
 config = YAML.load_file("restauth.yml")
-restauth_host = config[:host] || "localhost"
-restauth_port = config[:port] || 8000
-restauth_user = config[:user] || "user"
-restauth_password = config[:password] || "password"
+if !config.nil?
+  restauth_host = config[:host] || "localhost"
+  restauth_port = config[:port] || 8000
+  restauth_user = config[:user] || "user"
+  restauth_password = config[:password] || "password"
+else
+  restauth_host = "localhost"
+  restauth_port = 8000
+  restauth_user = "user"
+  restauth_password = "password"
+end
 
 puts "---------- Opening Connection ----------"
 conn = RestAuthConnection.new( "http://"+restauth_host+":"+restauth_port.to_s+"/", restauth_user, restauth_password )
