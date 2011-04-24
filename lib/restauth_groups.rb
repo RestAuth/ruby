@@ -1,5 +1,5 @@
-require 'RestAuth/restauth_common'
-require 'RestAuth/restauth_users'
+require 'restauth_common'
+require 'restauth_users'
 
 # Thrown when a group is not found.
 class RestAuthGroupNotFound < RestAuthResourceNotFound
