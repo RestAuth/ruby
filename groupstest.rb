@@ -1,7 +1,15 @@
 # load with [irb -r ./RestAuth.rb] enter [source "test.rb"]
 # server: http://test:test@localhost/
+require 'yaml'
+
+config = YAML.load_file("restauth.yml")
+restauth_host = config[:host] || "localhost"
+restauth_port = config[:port] || 8000
+restauth_user = config[:user] || "user"
+restauth_password = config[:password] || "password"
+
 puts "---------- Opening Connection ----------"
-conn = RestAuthConnection.new("http://localhost:8000/", "admin", "admin")
+conn = RestAuthConnection.new( "http://"+restauth_host+":"+restauth_port.to_s+"/", restauth_user, restauth_password )
 #
 group = RestAuthGroup.new(conn)
 #

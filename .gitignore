@@ -1,0 +1,9 @@
+# RestAuth credentials file
+restauth.yml
+
+# Autosave/backup/history stiff
+*~
+.autosave
+.orig
+.log
+.bycycle
