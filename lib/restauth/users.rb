@@ -15,26 +15,25 @@ class RestAuthPropertyExists < RestAuthResourceConflict
 end
 
 class RestAuthUser < RestAuthResource
-  @@prefix = '/users/'
   attr_accessor :conn, :name
 
 =begin
   Factory method that creates a new user in the RestAuth database and
   throws {@link RestAuthUserExists} if the user already exists.
 =end
-  def create( name, password, conn = @conn )
+  def self.create( name, password, conn )
     params = { 'user' => name, 'password' => password }
-    resp = conn.post( @@prefix, params )
+    resp = conn.post( '/users/', params )
     
     case resp.code.to_i
     when 201
-      return RestAuthUser.new(conn, name)
+      return RestAuthUser.new( name, conn )
     when 409
-      raise RestAuthUserExists.new(resp)
+      raise RestAuthUserExists.new( resp )
     when 412
-      raise RestAuthPreconditionFailed.new(resp)
+      raise RestAuthPreconditionFailed.new( resp )
     else
-      raise RestAuthUnknownStatus.new(resp)
+      raise RestAuthUnknownStatus.new( resp )
     end
   end
 
@@ -43,34 +42,34 @@ class RestAuthUser < RestAuthResource
   verifies that the user exists and throws {@link RestAuthUserNotFound}
   if not.
 =end
-  def get( name = @name, conn = @conn )
-    resp = conn.get( @@prefix+name+'/' )
+  def self.get( name, conn )
+    resp = conn.get( '/users/'+name+'/' )
 
     case resp.code.to_i
     when 204
-      return RestAuthUser.new(conn, name)
+      return RestAuthUser.new( name, conn )
     when 404
-      raise RestAuthUserNotFound.new(resp)
+      raise RestAuthUserNotFound.new( resp )
     else
-      raise RestAuthUnknownStatus.new(resp)
+      raise RestAuthUnknownStatus.new( resp )
     end
   end
 
 =begin
   Factory method that gets all users known to RestAuth.
 =end
-  def get_all( conn = @conn )
-    resp = conn.get( @@prefix )
+  def self.get_all( conn )
+    resp = conn.get( '/users/' )
 
     case resp.code.to_i
     when 200
       response = Array.new
       JSON.parse(resp.body).each { |name|
-        response.push( RestAuthUser.new(conn, name) )
+        response.push( RestAuthUser.new( name, conn ) )
       }
       return response
     else
-      raise RestAuthUnknownStatus.new(resp)
+      raise RestAuthUnknownStatus.new( resp )
     end
   end
 
@@ -81,10 +80,11 @@ class RestAuthUser < RestAuthResource
   <b>Note:</b> The constructor does not verify if the user exists, use
   {@link get} or {@link get_all} if you wan't to be sure it exists.
 =end
-  def initialize( conn, name = nil )
-    super
+  def initialize( name, conn )
     @conn = conn
-    @name = name
+    # RestAuth >> Server: Bug #6
+    # username owning properties is case-sensitive
+    @name = name.downcase  
   end
 
 =begin
@@ -93,7 +93,7 @@ class RestAuthUser < RestAuthResource
   @param string $password The new password.
 =end
   def set_password( password )
-    resp = @conn.put(@@prefix+name+'/', { 'password' => password } )
+    resp = conn.put('/users/'+name+'/', { 'password' => password } )
 
     case resp.code.to_i
     when 204
@@ -114,7 +114,7 @@ class RestAuthUser < RestAuthResource
   it also returns false in this case.
 =end
   def verify_password( password )
-    resp = @conn.post(@@prefix+@name+'/', { 'password' => password } )
+    resp = conn.post('/users/'+name+'/', { 'password' => password } )
     
     case resp.code.to_i
     when 204
@@ -130,7 +130,7 @@ class RestAuthUser < RestAuthResource
   Delete this user.
 =end
   def remove()
-    resp = @conn.delete(@@prefix+@name+'/' )
+    resp = conn.delete('/users/'+name+'/' )
     
     case resp.code.to_i
       when 204
@@ -149,7 +149,7 @@ class RestAuthUser < RestAuthResource
   a much better solution when fetching multiple properties.
 =end
   def get_properties()
-    resp = conn.get(@@prefix+name+'/props/')
+    resp = conn.get('/users/'+name+'/props/')
     
     case resp.code.to_i
     when 200
@@ -167,9 +167,9 @@ class RestAuthUser < RestAuthResource
 =end
   def set_property( propname, value )
     params = { 'value' => value }
-    resp = conn.put(@@prefix+name+'/props/'+propname+'/', params)
+    resp = conn.put('/users/'+name+'/props/'+propname+'/', params)
     #params = "value="+value.to_s
-    #resp = conn.put(@@prefix+name+'/props/'+propname+'/', params, headers = {'Content-Type' => 'application/x-www-form-urlencoded'})
+    #resp = conn.put('/users/'+name+'/props/'+propname+'/', params, headers = {'Content-Type' => 'application/x-www-form-urlencoded'})
     
     case resp.code.to_i
     when 200
@@ -193,7 +193,7 @@ class RestAuthUser < RestAuthResource
 =end
   def create_property( propname, value )
     params = { 'prop' => propname, 'value' => value }
-    resp = conn.post( @@prefix+name+'/props/', params )
+    resp = conn.post( '/users/'+name+'/props/', params )
     
     case resp.code.to_i
     when 201
@@ -215,8 +215,8 @@ class RestAuthUser < RestAuthResource
   using {@link get_properties}.
 =end
   def get_property( propname )
-    resp = conn.get(@@prefix+name+'/props/'+propname+'/')
-    #resp = conn.get(@@prefix+name+'/props/'+propname+'/', headers = {'Content-Type' => 'application/x-www-form-urlencoded'})
+    resp = conn.get('/users/'+name+'/props/'+propname+'/')
+    #resp = conn.get('/users/'+name+'/props/'+propname+'/', headers = {'Content-Type' => 'application/x-www-form-urlencoded'})
     
     case resp.code.to_i
     when 200
@@ -241,7 +241,7 @@ class RestAuthUser < RestAuthResource
   Delete the named property.
 =end
   def del_property( propname )
-    resp = conn.delete(@@prefix+name+'/props/'+propname+'/')
+    resp = conn.delete('/users/'+name+'/props/'+propname+'/')
     
     case resp.code.to_i
     when 204

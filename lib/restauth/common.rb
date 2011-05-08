@@ -1,23 +1,25 @@
 require "base64"
 require "net/http"
+require "net/https"
 Net::HTTP.version_1_2
 
 class RestAuthConnection
   @@connection = nil
   
-  def initialize ( host, user, password )
+  def initialize ( host, user, password, use_ssl=true )
     @host = host.gsub(/[#{'\/'}]+$/, '')
     @user = user
     @password = password
+    @use_ssl = use_ssl
     self.set_credentials( user, password )
-    puts 'DEBUG Initialized RestAuthConnection'
+    #puts 'DEBUG Initialized RestAuthConnection'
   end
   
-  def get_connection( host=@host, user=@user, password=@password )
+  def get_connection( host=@host, user=@user, password=@password, use_ssl=@use_ssl )
     if ! defined?(@@connection)
-      @@connection = RestAuthConnection.new( host, user, password )
+      @@connection = RestAuthConnection.new( host, user, password, use_ssl )
     end
-    puts 'CALLINFO RestAuthConnection::get_connection called'
+    #puts 'CALLINFO RestAuthConnection::get_connection called'
     return @@connection
   end
   
@@ -25,7 +27,7 @@ class RestAuthConnection
     @user = user
     @password = password
     @auth_header = 'Basic ' + Base64.encode64( user + ':' + password ).strip
-    puts 'CALLINFO RestAuthConnection::set_credentials called'
+    #puts 'CALLINFO RestAuthConnection::set_credentials called'
   end
   
   def send( request )
@@ -33,17 +35,26 @@ class RestAuthConnection
     
     headers = { 'Accept' => 'application/json', 'Authorization' => @auth_header }
     headers.each { |key,value|
-      request.add_field( key, value )
+      if !request.get_fields(key).nil?
+        request[key] = value
+      else
+        request.add_field( key, value )
+      end
     }
     
     uri = URI.parse( @host )
-    puts 'HTTPCALL Net::HTTP.new('+uri.host+', '+uri.port.to_s+')'
+    #puts 'HTTPCALL Net::HTTP.new('+uri.host+', '+uri.port.to_s+')'
     http = Net::HTTP.new(uri.host, uri.port)
-    response = http.request( request )
-    puts 'RESPONSE code: '+response.code
-    if ! response.body.nil?
-      puts 'RESPONSE body: '+response.body
+    if @use_ssl
+      http.use_ssl = true
+      http.ssl_timeout = 2
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     end
+    response = http.request( request )
+    #puts 'RESPONSE code: '+response.code
+    #if ! response.body.nil?
+    #  puts 'RESPONSE body: '+response.body
+    #end
 
     # handle error status codes
     case response.code.to_i
@@ -71,7 +82,7 @@ class RestAuthConnection
     #url = @host + self.sanitize_url( url )
     #uri = URI.parse(url)
     
-    puts 'REQUEST creating new Net::HTTP::Get request -> '+urlpath
+	#puts 'REQUEST creating new Net::HTTP::Get request -> '+urlpath
     request = Net::HTTP::Get.new( urlpath, headers )
     response = self.send( request )
     
@@ -95,7 +106,7 @@ class RestAuthConnection
       params = params.to_json
 	end
     
-    puts 'REQUEST creating new Net::HTTP::Post request -> '+urlpath
+    #puts 'REQUEST creating new Net::HTTP::Post request -> '+urlpath
     request = Net::HTTP::Post.new( urlpath, headers )
     request.body = params
     response = self.send( request )
@@ -120,7 +131,7 @@ class RestAuthConnection
 	  params = params.to_json
 	end
 
-    puts 'REQUEST creating new Net::HTTP::Put request -> '+urlpath
+    #puts 'REQUEST creating new Net::HTTP::Put request -> '+urlpath
     request = Net::HTTP::Put.new( urlpath, headers )
     request.body = params
     response = self.send( request )
@@ -145,7 +156,7 @@ class RestAuthConnection
 	  params = params.to_json
 	end
     
-    puts 'REQUEST creating new Net::HTTP::Delete request -> '+urlpath
+    #puts 'REQUEST creating new Net::HTTP::Delete request -> '+urlpath
     request = Net::HTTP::Delete.new( urlpath, headers )
     response = self.send( request )
     
@@ -184,22 +195,22 @@ class RestAuthResource
   end
 
   def _get( prefix, url, params = {}, headers = {} )
-    puts 'CALLINFO RestAuthResource::_get called'
+    #puts 'CALLINFO RestAuthResource::_get called'
     return @conn.get( prefix + url, params, headers )
   end
   
   def _post( prefix, url, params = {}, headers = {} )
-    puts 'CALLINFO RestAuthResource::_post called'
+    #puts 'CALLINFO RestAuthResource::_post called'
     return @conn.post( prefix + url, params, headers )
   end
   
   def _put( prefix, url, params = {}, headers = {} )
-    puts 'CALLINFO RestAuthResource::_put called'
+    #puts 'CALLINFO RestAuthResource::_put called'
     return @conn.put( prefix + url, params, headers )
   end
   
   def _delete( prefix, url, headers = {} )
-    puts 'CALLINFO RestAuthResource::_delete called'
+    #puts 'CALLINFO RestAuthResource::_delete called'
     return @conn.delete( prefix + url, headers )
   end
 end

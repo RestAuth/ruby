@@ -11,18 +11,17 @@ end
 
 # This class acts as a frontend for actions related to groups.
 class RestAuthGroup < RestAuthResource
-  @@prefix = '/groups/'
   attr_accessor :conn, :name
 
 =begin
   Factory method that creates a new group in RestAuth.
 =end
-  def create( name, conn = @conn )
-    resp = conn.post( @@prefix, { 'group' => name } )
+  def self.create( name, conn )
+    resp = conn.post( '/groups/', { 'group' => name } )
     
     case resp.code.to_i
     when 201
-      return RestAuthGroup.new( conn, name )
+      return RestAuthGroup.new( name, conn )
     when 409
       raise RestAuthGroupExists.new( resp )
     else
@@ -33,13 +32,12 @@ class RestAuthGroup < RestAuthResource
 =begin
   Factory method that gets an existing group from RestAuth.
 =end
-  #def self.get( conn, name )
-  def get( name = @name, conn = @conn )
-    resp = conn.get( @@prefix+name+'/' )
+  def self.get( name, conn )
+    resp = conn.get( '/groups/'+name+'/' )
     
     case resp.code.to_i
     when 204
-      return RestAuthGroup.new( conn, name )
+      return RestAuthGroup.new( name, conn )
     when 404
       raise RestAuthGroupNotFound.new( resp )
     else
@@ -51,7 +49,7 @@ class RestAuthGroup < RestAuthResource
   Factory method that gets all groups for this service known to 
   RestAuth.
 =end
-  def get_all( recursive = true, user = nil, conn = @conn )
+  def self.get_all( conn, recursive = true, user = nil )
     params = {}
     if ( user )
       params['user'] = user
@@ -59,13 +57,13 @@ class RestAuthGroup < RestAuthResource
     if ! recursive
       params['nonrecursive'] = 1
     end
-    resp = conn.get( @@prefix, params )
+    resp = conn.get( '/groups/', params )
     
     case resp.code.to_i
     when 200
       groups = Array.new()
       JSON.parse(resp.body).each { |groupname|
-        groups.push( RestAuthGroup.new(conn, groupname) )
+        groups.push( RestAuthGroup.new( groupname, conn ) )
       }
       return groups
     else
@@ -79,8 +77,7 @@ class RestAuthGroup < RestAuthResource
   @param RestAuthConnection conn A connection to a RestAuth service.
   @param string name The name of the new group.
 =end
-  def initialize( conn, name = nil )
-    super
+  def initialize( name, conn )
     @conn = conn
     @name = name
   end
@@ -94,7 +91,7 @@ class RestAuthGroup < RestAuthResource
       params['nonrecursive'] = 1
     end
 
-    resp = conn.get( @@prefix+name+'/users/', params )
+    resp = conn.get( '/groups/'+name+'/users/', params )
     
     case resp.code.to_i
     when 200
@@ -117,7 +114,7 @@ class RestAuthGroup < RestAuthResource
   def add_user( user )
     params = { 'user' => user.name }
 
-    resp = conn.post( @@prefix+name+'/users/', params)
+    resp = conn.post( '/groups/'+name+'/users/', params)
     
     case resp.code.to_i
     when 204
@@ -145,7 +142,7 @@ class RestAuthGroup < RestAuthResource
       params['nonrecursive'] = 1
     end
     
-    resp = conn.get( @@prefix+name+'/users/'+user.name+'/', params)
+    resp = conn.get( '/groups/'+name+'/users/'+user.name+'/', params)
 
     case resp.code.to_i
     when 204
@@ -168,7 +165,7 @@ class RestAuthGroup < RestAuthResource
   Delete this group.
 =end
   def remove()
-    resp = conn.delete( @@prefix+@name+'/' )
+    resp = conn.delete( '/groups/'+@name+'/' )
     
     case resp.code.to_i
     when 204
@@ -184,7 +181,7 @@ class RestAuthGroup < RestAuthResource
   Remove the given user from the group.
 =end
   def remove_user( user )
-    resp = conn.delete( @@prefix+name+'/users/'+user.name+'/' )
+    resp = conn.delete( '/groups/'+name+'/users/'+user.name+'/' )
     
     case resp.code.to_i
     when 204
@@ -209,7 +206,7 @@ class RestAuthGroup < RestAuthResource
   def add_group( group )
     params = { 'group' => group.name }
     
-    resp = conn.post(@@prefix+name+'/groups/', params)
+    resp = conn.post('/groups/'+name+'/groups/', params)
     
     case resp.code.to_i
     when 204
@@ -229,7 +226,7 @@ class RestAuthGroup < RestAuthResource
   List all groups in this group.
 =end
   def get_groups()
-    resp = conn.get( @@prefix+name+'/groups/' )
+    resp = conn.get( '/groups/'+name+'/groups/' )
     
     case resp.code.to_i
     when 200
@@ -249,7 +246,7 @@ class RestAuthGroup < RestAuthResource
   Remove a group from this group.
 =end
   def remove_group( group )
-    resp = conn.delete( @@prefix+name+'/groups/'+group.name+'/' )
+    resp = conn.delete( '/groups/'+name+'/groups/'+group.name+'/' )
     
     case resp.code.to_i
     when 204

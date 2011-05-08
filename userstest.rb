@@ -1,6 +1,7 @@
 # load with [irb -r ./RestAuth.rb] enter [source "test.rb"]
 # server: http://test:test@localhost/
 require 'yaml'
+require 'restauth'
 
 config = YAML.load_file("restauth.yml")
 if !config.nil?
@@ -18,38 +19,36 @@ end
 puts "---------- Opening Connection ----------"
 conn = RestAuthConnection.new( "http://"+restauth_host+":"+restauth_port.to_s+"/", restauth_user, restauth_password )
 #
-user = RestAuthUser.new(conn)
-#
 puts "---------- Creating User 'Astra' ----------"
-puts user.create( "Astra", "astra1" ).name + ' created'
+puts RestAuthUser.create( "Astra", "astra1", conn ).name + ' created'
 
-puts "---------- Reading User 'Astra' ----------"
+#puts "---------- Reading User 'Astra' ----------"
 # Properties schauen auf gross-kleinschreibung!!!
-astra = user.get("astra")
+astra = RestAuthUser.get( "astra", conn )
 puts astra.name
 
 puts "---------- Listing all users ----------"
-user.get_all
+RestAuthUser.get_all( conn )
 
-#puts "---------- Set Passwort to 'longsecretpassword' ----------"
-#puts astra.set_password('longsecretpassword')
+puts "---------- Set Passwort to 'longsecretpassword' ----------"
+puts astra.set_password('longsecretpassword')
 
 # verify old password
-#puts "---------- Verify 'astra1' ----------"
-#puts astra.verify_password('astra1')
+puts "---------- Verify 'astra1' ----------"
+puts astra.verify_password('astra1')
 
 # verify new password
-#puts "---------- Verify 'longsecretpassword' ----------"
-#puts astra.verify_password('longsecretpassword')
+puts "---------- Verify 'longsecretpassword' ----------"
+puts astra.verify_password('longsecretpassword')
 
 # and reset
-#puts "---------- Reset Passwort to 'astra1' ----------"
-#puts astra.set_password('astra1')
+puts "---------- Reset Passwort to 'astra1' ----------"
+puts astra.set_password('astra1')
 
 ## Testing properties
 puts "Set properties:"
-astra.get_properties.each{ |prop|
-  puts prop
+astra.get_properties.each{ |prop, value|
+  puts prop+': '+value
 }
 
 puts "---------- Creating 'testprop' of 'Astra' ----------"
@@ -70,8 +69,8 @@ puts "---------- Removing 'testprop' of 'Astra' ----------"
 astra.del_property("testprop")
 
 puts "---------- Getting properties of 'Astra' ----------"
-astra.get_properties.each{ |prop|
-  puts prop
+astra.get_properties.each{ |prop, value|
+  puts prop+': '+value
 }
 
 puts "---------- Deleting User 'Astra' ----------"

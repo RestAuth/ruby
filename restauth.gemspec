@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name = %q{restauth}
-  s.version = "0.3"
-  s.date = %q{2011-04-24}
+  s.version = "0.4"
+  s.date = %q{2011-05-08}
   s.authors = ["David Kaufmann"]
   s.email = %q{astra@fsinf.at}
   s.summary = %q{RestAuth is a Client library to a Restful Authentication Server.}

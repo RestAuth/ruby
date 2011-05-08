@@ -5,10 +5,10 @@ TYPES="^>>|^\?>|=>"
 FLAGS="^CALLINFO|^HTTPCALL"
 
 # with debug output
-#irb -r ./RestAuth.rb userstest.rb
-#irb -r ./RestAuth.rb groupstest.rb
+#irb userstest.rb
+#irb groupstest.rb
 
 # without debug output
-irb -r ./RestAuth.rb userstest.rb | egrep -v "${TYPES}|${FLAGS}"
-#irb -r ./RestAuth.rb groupstest.rb | egrep -v "${TYPES}|${FLAGS}"
+irb userstest.rb | egrep -v "${TYPES}|${FLAGS}"
+#irb groupstest.rb | egrep -v "${TYPES}|${FLAGS}"
 
