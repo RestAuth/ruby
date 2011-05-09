@@ -1,14 +1,14 @@
-From de633970543c2b9fdaa8cd89375d8f8a4f3ec626 Mon Sep 17 00:00:00 2001
+From 03667e9e759bd252624730f510cc36481dd33a8a Mon Sep 17 00:00:00 2001
 From: David Kaufmann <astra@fsinf.at>
-Date: Sun, 8 May 2011 13:00:33 +0200
+Date: Tue, 10 May 2011 01:32:57 +0200
 Subject: [PATCH] RestAuth authentication for Gitorious implemented
 
 ---
  app/models/user.rb                       |   14 ++--
  config/gitorious.sample.yml              |   18 +++++
  lib/gitorious/authentication/default.rb  |   44 +++++++++++
- lib/gitorious/authentication/restauth.rb |  115 ++++++++++++++++++++++++++++++
- 4 files changed, 184 insertions(+), 7 deletions(-)
+ lib/gitorious/authentication/restauth.rb |  120 ++++++++++++++++++++++++++++++
+ 4 files changed, 189 insertions(+), 7 deletions(-)
  create mode 100644 lib/gitorious/authentication/default.rb
  create mode 100644 lib/gitorious/authentication/restauth.rb
 
@@ -127,10 +127,10 @@ index 0000000..5e192ed
 +
 diff --git a/lib/gitorious/authentication/restauth.rb b/lib/gitorious/authentication/restauth.rb
 new file mode 100644
-index 0000000..1ad1919
+index 0000000..82e0eb6
 --- /dev/null
 +++ b/lib/gitorious/authentication/restauth.rb
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,120 @@
 +# encoding: utf-8
 +#--
 +#   Modification of gitorious-Ldap-authentication-patch of Marius Mathiesen <marius@shortcut.no>
@@ -188,16 +188,20 @@ index 0000000..1ad1919
 +        begin
 +          remoteuser = RestAuthUser.get( login, @conn )
 +        rescue RestAuthUserNotFound
++          logger.warn "RestAuth user #{login} not found."
 +          return nil
 +        end
-+        return nil unless remoteuser.verify_password( password )
++        if ! remoteuser.verify_password( password )
++          logger.warn "RestAuth user authentication for #{login} failed."
++          return nil
++        end
 +        u = User.find_by_login(login)
 +        if u
 +          sync_user(u, remoteuser)
 +          return u
 +        else
-+          logger.warn "RestAuth authentication succeeded for #{login} but no gitorious account exists"
-+          return auto_register(login)
++          logger.warn "RestAuth authentication succeeded for #{login} but no gitorious account exists."
++          return auto_register( login )
 +        end
 +      end
 +      
@@ -207,6 +211,7 @@ index 0000000..1ad1919
 +        user = User.new
 +
 +        user.login = username
++        user.email = username+'@git.fsinf.at'
 +        user.crypted_password = 'restauth'
 +        user.salt = 'restauth'
 +        user.activated_at = Time.now.utc
