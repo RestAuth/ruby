@@ -174,8 +174,8 @@ class RestAuthUser < RestAuthResource
     case resp.code.to_i
     when 200
       # As Ruby does not recognizes "string" as a json-object
-      #return JSON.parse( resp.body )
-      return resp.body.delete("\"")
+      return JSON.parse( resp.body )
+      #return resp.body.delete("\"")
     when 201
       return
     when 404
@@ -221,8 +221,8 @@ class RestAuthUser < RestAuthResource
     case resp.code.to_i
     when 200
       # As Ruby does not recognizes "string" as a json-object
-      #return JSON.parse( resp.body )
-      return resp.body.delete("\"")
+      return JSON.parse( resp.body )
+      #return resp.body.delete("\"")
     when 404
       case resp.header['resource-type']
       when 'user'
