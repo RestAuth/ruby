@@ -3,13 +3,14 @@ require "net/http"
 require "net/https"
 Net::HTTP.version_1_2
 
+RootCA = '/etc/ssl/certs'
+
 class RestAuthConnection
   @@connection = nil
   
   def initialize ( host, validate_ssl=true )
     @host = host.gsub(/[#{'\/'}]+$/, '')
-	@validate_ssl = validate_ssl
-    self.set_credentials( user, password )
+    @validate_ssl = validate_ssl
     #puts 'DEBUG Initialized RestAuthConnection'
   end
   
@@ -27,7 +28,7 @@ class RestAuthConnection
     if !request.get_fields('Accept').nil?
       request['Accept'] = 'application/json'
     else
-      request.add_field( 'Accept', 'application/json'
+      request.add_field( 'Accept', 'application/json')
     end
     
     uri = URI.parse( @host )
@@ -35,8 +36,7 @@ class RestAuthConnection
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = (uri.scheme == 'https')
     http.ssl_timeout = 2
-    RootCA = '/etc/ssl/certs'
-    if (File.directory? RootCA && http.use_ssl?)
+    if (File.directory?(RootCA) && http.use_ssl?)
       http.ca_path = RootCA
       http.verify_mode = OpenSSL::SSL::VERIFY_PEER
       http.verify_depth = 5
@@ -44,7 +44,7 @@ class RestAuthConnection
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     end
 
-	request.basic_auth uri.user, uri.password
+    request.basic_auth uri.user, uri.password
     response = http.request( request )
     #puts 'RESPONSE code: '+response.code
     #if ! response.body.nil?

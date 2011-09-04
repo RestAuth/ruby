@@ -35,7 +35,7 @@ module Gitorious
         @fullname_attribute = config["fullname_attribute"]
         @email_attribute = config["email_attribute"]
         if @conn.nil?
-          @conn = RestAuthConnection.new(url, @verify_ssl)
+          @conn = RestAuthConnection.new(@host, @verify_ssl)
         end
       end
 
@@ -55,6 +55,7 @@ module Gitorious
         u = User.find_by_login(login)
         if u
           sync_user(u, remoteuser)
+          logger.warn "RestAuth authentication succeeded for #{login} and is synced."
           return u
         else
           logger.warn "RestAuth authentication succeeded for #{login} but no gitorious account exists."
