@@ -6,42 +6,29 @@ Net::HTTP.version_1_2
 class RestAuthConnection
   @@connection = nil
   
-  def initialize ( host, user, password, validate_ssl=true )
+  def initialize ( host, validate_ssl=true )
     @host = host.gsub(/[#{'\/'}]+$/, '')
-    @user = user
-    @password = password
-    @use_ssl = use_ssl
 	@validate_ssl = validate_ssl
     self.set_credentials( user, password )
     #puts 'DEBUG Initialized RestAuthConnection'
   end
   
-  def get_connection( host=@host, user=@user, password=@password, validate_ssl=@validate_ssl )
+  def get_connection( host=@host, validate_ssl=@validate_ssl )
     if ! defined?(@@connection)
-      @@connection = RestAuthConnection.new( host, user, password, validate_ssl )
+      @@connection = RestAuthConnection.new( host, validate_ssl )
     end
     #puts 'CALLINFO RestAuthConnection::get_connection called'
     return @@connection
   end
   
-  def set_credentials( user, password )
-    @user = user
-    @password = password
-    @auth_header = 'Basic ' + Base64.encode64( user + ':' + password ).strip
-    #puts 'CALLINFO RestAuthConnection::set_credentials called'
-  end
-  
   def send( request )
     # add headers present with all methods
     
-    headers = { 'Accept' => 'application/json', 'Authorization' => @auth_header }
-    headers.each { |key,value|
-      if !request.get_fields(key).nil?
-        request[key] = value
-      else
-        request.add_field( key, value )
-      end
-    }
+    if !request.get_fields('Accept').nil?
+      request['Accept'] = 'application/json'
+    else
+      request.add_field( 'Accept', 'application/json'
+    end
     
     uri = URI.parse( @host )
     #puts 'HTTPCALL Net::HTTP.new('+uri.host+', '+uri.port.to_s+')'
@@ -57,6 +44,7 @@ class RestAuthConnection
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     end
 
+	request.basic_auth uri.user, uri.password
     response = http.request( request )
     #puts 'RESPONSE code: '+response.code
     #if ! response.body.nil?

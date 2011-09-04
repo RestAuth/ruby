@@ -29,22 +29,13 @@ module Gitorious
         @logger = RAILS_DEFAULT_LOGGER if !@logger && defined?(RAILS_DEFAULT_LOGGER)
         @logger = Logger.new(STDOUT) if !@logger
 
-        @host = config["host"] || "https://localhost:8000"
+        @host = config["host"] || "https://user:password@localhost:8000/"
         @verify_ssl = config["verify_ssl"] || true
         @autoregistration = config["autoregistration"] || true
-        @service_username = config["service_username"]
-        raise '\'service_username\' is required when performing RestAuth authentication' unless @service_username
-        @service_password = config["service_password"]
-        raise '\'service_password\' is required when performing RestAuth authentication' unless @service_password
         @fullname_attribute = config["fullname_attribute"]
         @email_attribute = config["email_attribute"]
         if @conn.nil?
-          if @use_ssl
-            url = "https://"+@host+":"+@port.to_s+"/"
-          else
-            url = "http://"+@host+":"+@port.to_s+"/"
-          end
-          @conn = RestAuthConnection.new(url, @service_username, @service_password, @use_ssl, @verify_ssl)
+          @conn = RestAuthConnection.new(url, @verify_ssl)
         end
       end
 
@@ -67,7 +58,11 @@ module Gitorious
           return u
         else
           logger.warn "RestAuth authentication succeeded for #{login} but no gitorious account exists."
-          return auto_register( login )
+          if @autoregistration
+            return auto_register( login )
+          else
+            return nil
+          end
         end
       end
       
