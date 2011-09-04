@@ -6,18 +6,19 @@ Net::HTTP.version_1_2
 class RestAuthConnection
   @@connection = nil
   
-  def initialize ( host, user, password, use_ssl=true )
+  def initialize ( host, user, password, use_ssl=true, validate_ssl=true )
     @host = host.gsub(/[#{'\/'}]+$/, '')
     @user = user
     @password = password
     @use_ssl = use_ssl
+	@validate_ssl = validate_ssl
     self.set_credentials( user, password )
     #puts 'DEBUG Initialized RestAuthConnection'
   end
   
-  def get_connection( host=@host, user=@user, password=@password, use_ssl=@use_ssl )
+  def get_connection( host=@host, user=@user, password=@password, use_ssl=@use_ssl, validate_ssl=@validate_ssl )
     if ! defined?(@@connection)
-      @@connection = RestAuthConnection.new( host, user, password, use_ssl )
+      @@connection = RestAuthConnection.new( host, user, password, use_ssl, validate_ssl )
     end
     #puts 'CALLINFO RestAuthConnection::get_connection called'
     return @@connection
