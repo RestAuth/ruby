@@ -29,9 +29,7 @@ module Gitorious
         @logger = RAILS_DEFAULT_LOGGER if !@logger && defined?(RAILS_DEFAULT_LOGGER)
         @logger = Logger.new(STDOUT) if !@logger
 
-        @host = config["host"] || "localhost"
-        @port = config["port"] || 8000
-        @use_ssl = config["use_ssl"] || true
+        @host = config["host"] || "https://localhost:8000"
         @verify_ssl = config["verify_ssl"] || true
         @autoregistration = config["autoregistration"] || true
         @service_username = config["service_username"]

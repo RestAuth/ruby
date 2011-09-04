@@ -6,7 +6,7 @@ Net::HTTP.version_1_2
 class RestAuthConnection
   @@connection = nil
   
-  def initialize ( host, user, password, use_ssl=true, validate_ssl=true )
+  def initialize ( host, user, password, validate_ssl=true )
     @host = host.gsub(/[#{'\/'}]+$/, '')
     @user = user
     @password = password
@@ -16,9 +16,9 @@ class RestAuthConnection
     #puts 'DEBUG Initialized RestAuthConnection'
   end
   
-  def get_connection( host=@host, user=@user, password=@password, use_ssl=@use_ssl, validate_ssl=@validate_ssl )
+  def get_connection( host=@host, user=@user, password=@password, validate_ssl=@validate_ssl )
     if ! defined?(@@connection)
-      @@connection = RestAuthConnection.new( host, user, password, use_ssl, validate_ssl )
+      @@connection = RestAuthConnection.new( host, user, password, validate_ssl )
     end
     #puts 'CALLINFO RestAuthConnection::get_connection called'
     return @@connection
@@ -46,11 +46,17 @@ class RestAuthConnection
     uri = URI.parse( @host )
     #puts 'HTTPCALL Net::HTTP.new('+uri.host+', '+uri.port.to_s+')'
     http = Net::HTTP.new(uri.host, uri.port)
-    if @use_ssl
-      http.use_ssl = true
-      http.ssl_timeout = 2
+    http.use_ssl = (uri.scheme == 'https')
+    http.ssl_timeout = 2
+    RootCA = '/etc/ssl/certs'
+    if (File.directory? RootCA && http.use_ssl?)
+      http.ca_path = RootCA
+      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      http.verify_depth = 5
+    else
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     end
+
     response = http.request( request )
     #puts 'RESPONSE code: '+response.code
     #if ! response.body.nil?
