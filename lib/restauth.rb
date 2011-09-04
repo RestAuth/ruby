@@ -4,5 +4,5 @@ require 'restauth/users'
 require 'restauth/groups'
 
 module RestAuth
-  VERSION = '0.4'
+  VERSION = '0.4.1'
 end
