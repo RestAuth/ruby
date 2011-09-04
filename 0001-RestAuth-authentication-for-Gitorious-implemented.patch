@@ -1,12 +1,12 @@
-From b8646866f27830b877310561bc806c65beda964f Mon Sep 17 00:00:00 2001
+From 0eba4a845cbd7ea96b6fdb0f8cd0cc26b737307f Mon Sep 17 00:00:00 2001
 From: David Kaufmann <astra@fsinf.at>
-Date: Sun, 4 Sep 2011 07:07:32 +0200
+Date: Sun, 4 Sep 2011 07:33:27 +0200
 Subject: [PATCH] RestAuth authentication for Gitorious implemented
 
 ---
  app/models/user.rb          |   14 +++++++-------
- config/gitorious.sample.yml |   18 ++++++++++++++++++
- 2 files changed, 25 insertions(+), 7 deletions(-)
+ config/gitorious.sample.yml |   19 +++++++++++++++++++
+ 2 files changed, 26 insertions(+), 7 deletions(-)
 
 diff --git a/app/models/user.rb b/app/models/user.rb
 index 0f968bc..237b17b 100644
@@ -46,10 +46,10 @@ index 0f968bc..237b17b 100644
  
    # Encrypts some data with the salt.
 diff --git a/config/gitorious.sample.yml b/config/gitorious.sample.yml
-index d7885d4..f8a74ba 100644
+index d7885d4..72cc79b 100644
 --- a/config/gitorious.sample.yml
 +++ b/config/gitorious.sample.yml
-@@ -66,6 +66,24 @@ test:
+@@ -66,6 +66,25 @@ test:
    # Pick a default license
    #default_license: GNU Affero General Public License (AGPLv3)
  
@@ -63,6 +63,7 @@ index d7885d4..f8a74ba 100644
 +  #    host: localhost
 +  #    port: 8000
 +  #    use_ssl: true
++  #    verify_ssl: true
 +  #    autoregistration: true
 +  #    service_username: username
 +  #    service_password: password

@@ -32,6 +32,7 @@ module Gitorious
         @host = config["host"] || "localhost"
         @port = config["port"] || 8000
         @use_ssl = config["use_ssl"] || true
+        @verify_ssl = config["verify_ssl"] || true
         @autoregistration = config["autoregistration"] || true
         @service_username = config["service_username"]
         raise '\'service_username\' is required when performing RestAuth authentication' unless @service_username
@@ -45,7 +46,7 @@ module Gitorious
           else
             url = "http://"+@host+":"+@port.to_s+"/"
           end
-          @conn = RestAuthConnection.new(url, @service_username, @service_password, @use_ssl)
+          @conn = RestAuthConnection.new(url, @service_username, @service_password, @use_ssl, @verify_ssl)
         end
       end
 
