@@ -1,5 +1,6 @@
 # RestAuth credentials file
 restauth.yml
+restauth-*.gem
 
 # Autosave/backup/history stiff
 *~
