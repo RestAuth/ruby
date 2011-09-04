@@ -1,19 +1,15 @@
-From 03667e9e759bd252624730f510cc36481dd33a8a Mon Sep 17 00:00:00 2001
+From b8646866f27830b877310561bc806c65beda964f Mon Sep 17 00:00:00 2001
 From: David Kaufmann <astra@fsinf.at>
-Date: Tue, 10 May 2011 01:32:57 +0200
+Date: Sun, 4 Sep 2011 07:07:32 +0200
 Subject: [PATCH] RestAuth authentication for Gitorious implemented
 
 ---
- app/models/user.rb                       |   14 ++--
- config/gitorious.sample.yml              |   18 +++++
- lib/gitorious/authentication/default.rb  |   44 +++++++++++
- lib/gitorious/authentication/restauth.rb |  120 ++++++++++++++++++++++++++++++
- 4 files changed, 189 insertions(+), 7 deletions(-)
- create mode 100644 lib/gitorious/authentication/default.rb
- create mode 100644 lib/gitorious/authentication/restauth.rb
+ app/models/user.rb          |   14 +++++++-------
+ config/gitorious.sample.yml |   18 ++++++++++++++++++
+ 2 files changed, 25 insertions(+), 7 deletions(-)
 
 diff --git a/app/models/user.rb b/app/models/user.rb
-index 14dd4e9..03eb8b1 100644
+index 0f968bc..237b17b 100644
 --- a/app/models/user.rb
 +++ b/app/models/user.rb
 @@ -53,16 +53,12 @@ class User < ActiveRecord::Base
@@ -32,9 +28,9 @@ index 14dd4e9..03eb8b1 100644
 -  validates_length_of       :login,    :within => 3..40
 -  validates_length_of       :email,    :within => 3..100
    validates_uniqueness_of   :login, :email, :case_sensitive => false
- 
    validates_acceptance_of :terms_of_use, :on => :create, :allow_nil => false
-@@ -146,8 +142,12 @@ class User < ActiveRecord::Base
+   validates_format_of     :avatar_file_name, :with => /\.(jpe?g|gif|png|bmp|svg|ico)$/i, :allow_blank => true
+@@ -142,8 +138,12 @@ class User < ActiveRecord::Base
  
    # Authenticates a user by their login name and unencrypted password.  Returns the user or nil.
    def self.authenticate(email, password)
@@ -50,14 +46,13 @@ index 14dd4e9..03eb8b1 100644
  
    # Encrypts some data with the salt.
 diff --git a/config/gitorious.sample.yml b/config/gitorious.sample.yml
-index 3f69970..54033a5 100644
+index d7885d4..f8a74ba 100644
 --- a/config/gitorious.sample.yml
 +++ b/config/gitorious.sample.yml
-@@ -61,3 +61,21 @@ test:
- 
+@@ -66,6 +66,24 @@ test:
    # Pick a default license
    #default_license: GNU Affero General Public License (AGPLv3)
-+
+ 
 +  # Configure authentication (Default, RestAuth, etc).
 +  # Multiple authentication methods can be specified in list form.
 +  # Each method will be attempted in the order listed.
@@ -75,182 +70,10 @@ index 3f69970..54033a5 100644
 +  #    email_attribute: gitorious_email
 +  authentication:
 +    - method: Default
-diff --git a/lib/gitorious/authentication/default.rb b/lib/gitorious/authentication/default.rb
-new file mode 100644
-index 0000000..5e192ed
---- /dev/null
-+++ b/lib/gitorious/authentication/default.rb
-@@ -0,0 +1,44 @@
-+# encoding: utf-8
-+#--
-+#   Copyright (C) 2009 Marius Mathiesen <marius@shortcut.no>
-+#
-+#   This program is free software: you can redistribute it and/or modify
-+#   it under the terms of the GNU Affero General Public License as published by
-+#   the Free Software Foundation, either version 3 of the License, or
-+#   (at your option) any later version.
-+#
-+#   This program is distributed in the hope that it will be useful,
-+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+#   GNU Affero General Public License for more details.
-+#
-+#   You should have received a copy of the GNU Affero General Public License
-+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+#++
 +
-+module Gitorious
-+  module Authentication
-+    class Default
-+      attr_accessor :logger
-+      
-+      def initialize(config)
-+        @logger = ::Rails.logger if !@logger && defined?(::Rails) && Rails.respond_to?(:logger)
-+        @logger = RAILS_DEFAULT_LOGGER if !@logger && defined?(RAILS_DEFAULT_LOGGER)
-+        @logger = Logger.new(STDOUT) if !@logger
-+      end
-+
-+      # Authenticates a user by their login name and unencrypted password.  Returns the user or nil.
-+      def authenticate( username, password )
-+        logger.debug "Default authenticating #{username}"
-+        u = User.find_by_email_with_aliases(username)
-+        u ||= User.find_by_login(username)
-+        if u && u.crypted_password == u.encrypt(password)
-+          u
-+        else
-+          nil
-+        end
-+      end
-+    end
-+  end
-+end
-+
-diff --git a/lib/gitorious/authentication/restauth.rb b/lib/gitorious/authentication/restauth.rb
-new file mode 100644
-index 0000000..82e0eb6
---- /dev/null
-+++ b/lib/gitorious/authentication/restauth.rb
-@@ -0,0 +1,120 @@
-+# encoding: utf-8
-+#--
-+#   Modification of gitorious-Ldap-authentication-patch of Marius Mathiesen <marius@shortcut.no>
-+#   Modified 2011 by David Kaufmann <astra@fsinf.at> for RestAuth
-+#
-+#   This program is free software: you can redistribute it and/or modify
-+#   it under the terms of the GNU Affero General Public License as published by
-+#   the Free Software Foundation, either version 3 of the License, or
-+#   (at your option) any later version.
-+#
-+#   This program is distributed in the hope that it will be useful,
-+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+#   GNU Affero General Public License for more details.
-+#
-+#   You should have received a copy of the GNU Affero General Public License
-+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+#++
-+
-+require 'rubygems'
-+require 'restauth'
-+module Gitorious
-+  module Authentication
-+    class Restauth
-+      attr_accessor :logger
-+      
-+      def initialize(config)
-+        @logger = ::Rails.logger if !@logger && defined?(::Rails) && Rails.respond_to?(:logger)
-+        @logger = RAILS_DEFAULT_LOGGER if !@logger && defined?(RAILS_DEFAULT_LOGGER)
-+        @logger = Logger.new(STDOUT) if !@logger
-+
-+        @host = config["host"] || "localhost"
-+        @port = config["port"] || 8000
-+        @use_ssl = config["use_ssl"] || true
-+        @autoregistration = config["autoregistration"] || true
-+        @service_username = config["service_username"]
-+        raise '\'service_username\' is required when performing RestAuth authentication' unless @service_username
-+        @service_password = config["service_password"]
-+        raise '\'service_password\' is required when performing RestAuth authentication' unless @service_password
-+        @fullname_attribute = config["fullname_attribute"]
-+        @email_attribute = config["email_attribute"]
-+        if @conn.nil?
-+          if @use_ssl
-+            url = "https://"+@host+":"+@port.to_s+"/"
-+          else
-+            url = "http://"+@host+":"+@port.to_s+"/"
-+          end
-+          @conn = RestAuthConnection.new(url, @service_username, @service_password, @use_ssl)
-+        end
-+      end
-+
-+      # Authenticates a user by their login name and unencrypted password.  Returns the user or nil.
-+      def authenticate( login, password )
-+        logger.warn "RestAuth authenticating #{login}"
-+        begin
-+          remoteuser = RestAuthUser.get( login, @conn )
-+        rescue RestAuthUserNotFound
-+          logger.warn "RestAuth user #{login} not found."
-+          return nil
-+        end
-+        if ! remoteuser.verify_password( password )
-+          logger.warn "RestAuth user authentication for #{login} failed."
-+          return nil
-+        end
-+        u = User.find_by_login(login)
-+        if u
-+          sync_user(u, remoteuser)
-+          return u
-+        else
-+          logger.warn "RestAuth authentication succeeded for #{login} but no gitorious account exists."
-+          return auto_register( login )
-+        end
-+      end
-+      
-+      # Automatically registers a user by their username in gitorious. Returns the user or nil.
-+      def auto_register(username)
-+        logger.info "RestAuth auto-registering user #{username}"
-+        user = User.new
-+
-+        user.login = username
-+        user.email = username+'@git.fsinf.at'
-+        user.crypted_password = 'restauth'
-+        user.salt = 'restauth'
-+        user.activated_at = Time.now.utc
-+        user.activation_code = nil
-+        user.terms_of_use = '1'
-+        user.aasm_state = 'terms_accepted'
-+
-+        remoteuser = RestAuthUser.new( username, @conn )
-+        sync_user( user, remoteuser )
-+        
-+        user.save!
-+        user
-+      end
-+
-+      # Updates a user from information in RestAuth-database
-+      def sync_user( user, remoteuser )
-+        if @full_name_attribute
-+          begin
-+            user.fullname = remoteuser.get_property( @fullname_attribute )
-+          rescue RestAuthPropertyNotFound => e
-+            if ! user.fullname.nil?
-+              user.fullname = remoteuser.create_property( @fullname_attribute, user.fullname )
-+            end
-+          end
-+        end
-+        if @email_attribute
-+          begin
-+            user.email = remoteuser.get_property( @email_attribute )
-+          rescue RestAuthPropertyNotFound => e
-+            if ! user.email.nil?
-+              user.email = remoteuser.create_property( @email_attribute, user.email )
-+            end
-+          end
-+        end
-+      end
-+    end
-+  end
-+end
-+
+   # Terms of service and privacy policy
+   terms_of_use: false
+   terms_of_service_url: http://en.gitorious.org/tos
 -- 
-1.7.0.4
+1.7.6.1
 
