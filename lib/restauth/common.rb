@@ -3,6 +3,8 @@ require "net/http"
 require "net/https"
 Net::HTTP.version_1_2
 
+##
+# Directory containing the trusted ca-/ssl-certificates
 RootCA = '/etc/ssl/certs'
 
 ##
@@ -174,6 +176,8 @@ class RestAuthConnection
     return response;
   end
   
+  ##
+  # remove unneccessary characters from uri and mask special characters
   def sanitize_url( url )
     # TODO copied from php
     url = url.chomp("\/") + "/"
@@ -199,21 +203,29 @@ class RestAuthResource
     subclass.instance_eval { public_class_method :new }
   end
 
+  ##
+  # Wrapper for GET requests
   def _get( prefix, url, params = {}, headers = {} )
     #puts 'CALLINFO RestAuthResource::_get called'
     return @conn.get( prefix + url, params, headers )
   end
   
+  ##
+  # Wrapper for POST requests
   def _post( prefix, url, params = {}, headers = {} )
     #puts 'CALLINFO RestAuthResource::_post called'
     return @conn.post( prefix + url, params, headers )
   end
   
+  ##
+  # Wrapper for PUT requests
   def _put( prefix, url, params = {}, headers = {} )
     #puts 'CALLINFO RestAuthResource::_put called'
     return @conn.put( prefix + url, params, headers )
   end
   
+  ##
+  # Wrapper for DELETE requests
   def _delete( prefix, url, headers = {} )
     #puts 'CALLINFO RestAuthResource::_delete called'
     return @conn.delete( prefix + url, headers )
