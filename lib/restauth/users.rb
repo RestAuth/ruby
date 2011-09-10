@@ -2,25 +2,34 @@ require 'restauth/errors'
 require 'restauth/common'
 require 'json'
 
+##
+# Exception thrown when a user could not be found. 
 class RestAuthUserNotFound < RestAuthResourceNotFound
 end
 
+##
+# Exception thrown when a property could not be found. 
 class RestAuthPropertyNotFound < RestAuthResourceNotFound
 end
 
+##
+# Exception thrown when trying to create an already existing user. 
 class RestAuthUserExists < RestAuthResourceConflict
 end
 
+##
+# Exception thrown when trying to create an already existing property. 
 class RestAuthPropertyExists < RestAuthResourceConflict
 end
 
+##
+# This class acts as a frontend for actions related to users. 
 class RestAuthUser < RestAuthResource
   attr_accessor :conn, :name
 
-=begin
-  Factory method that creates a new user in the RestAuth database and
-  throws {@link RestAuthUserExists} if the user already exists.
-=end
+  ##
+  # Factory method that creates a new user in the RestAuth database and
+  # throws {@link RestAuthUserExists} if the user already exists.
   def self.create( name, password, conn )
     params = { 'user' => name, 'password' => password }
     resp = conn.post( '/users/', params )
@@ -37,11 +46,10 @@ class RestAuthUser < RestAuthResource
     end
   end
 
-=begin
-  Factory method that gets an existing user from RestAuth. This method
-  verifies that the user exists and throws {@link RestAuthUserNotFound}
-  if not.
-=end
+  ##
+  # Factory method that gets an existing user from RestAuth. This method
+  # verifies that the user exists and throws {@link RestAuthUserNotFound}
+  # if not.
   def self.get( name, conn )
     resp = conn.get( '/users/'+name+'/' )
 
@@ -55,9 +63,8 @@ class RestAuthUser < RestAuthResource
     end
   end
 
-=begin
-  Factory method that gets all users known to RestAuth.
-=end
+  ##
+  # Factory method that gets all users known to RestAuth.
   def self.get_all( conn )
     resp = conn.get( '/users/' )
 
@@ -73,13 +80,12 @@ class RestAuthUser < RestAuthResource
     end
   end
 
-=begin
-  Constructor that initializes an object representing a user in
-  RestAuth. 
-  
-  <b>Note:</b> The constructor does not verify if the user exists, use
-  {@link get} or {@link get_all} if you wan't to be sure it exists.
-=end
+  ##
+  # Constructor that initializes an object representing a user in
+  # RestAuth. 
+  #
+  #<b>Note:</b> The constructor does not verify if the user exists, use
+  #{@link get} or {@link get_all} if you wan't to be sure it exists.
   def initialize( name, conn )
     @conn = conn
     # RestAuth >> Server: Bug #6
@@ -87,11 +93,10 @@ class RestAuthUser < RestAuthResource
     @name = name.downcase  
   end
 
-=begin
-  Set the password of this user.
-  
-  @param string $password The new password.
-=end
+  ##
+  # Set the password of this user.
+  # 
+  # @param string $password The new password.
   def set_password( password )
     resp = conn.put('/users/'+name+'/', { 'password' => password } )
 
@@ -107,12 +112,11 @@ class RestAuthUser < RestAuthResource
     end
   end
 
-=begin
-  Verify the given password.
-  
-  The method does not throw an error if the user does not exist at all,
-  it also returns false in this case.
-=end
+  ##
+  # Verify the given password.
+  # 
+  # The method does not throw an error if the user does not exist at all,
+  # it also returns false in this case.
   def verify_password( password )
     resp = conn.post('/users/'+name+'/', { 'password' => password } )
     
@@ -126,9 +130,8 @@ class RestAuthUser < RestAuthResource
     end
   end
 
-=begin
-  Delete this user.
-=end
+  ##
+  # Delete this user.
   def remove()
     resp = conn.delete('/users/'+name+'/' )
     
@@ -142,12 +145,11 @@ class RestAuthUser < RestAuthResource
       end
   end
 
-=begin
-  Get all properties defined for this user.
-  
-  This method causes a single request to the RestAuth service and is
-  a much better solution when fetching multiple properties.
-=end
+  ##
+  # Get all properties defined for this user.
+  # 
+  # This method causes a single request to the RestAuth service and is
+  # a much better solution when fetching multiple properties.
   def get_properties()
     resp = conn.get('/users/'+name+'/props/')
     
@@ -161,21 +163,16 @@ class RestAuthUser < RestAuthResource
     end
   end
   
-=begin
-  Set a property for this user. This method overwrites any previous
-  entry.
-=end
+  ##
+  # Set a property for this user. This method overwrites any previous
+  # entry.
   def set_property( propname, value )
     params = { 'value' => value }
     resp = conn.put('/users/'+name+'/props/'+propname+'/', params)
-    #params = "value="+value.to_s
-    #resp = conn.put('/users/'+name+'/props/'+propname+'/', params, headers = {'Content-Type' => 'application/x-www-form-urlencoded'})
     
     case resp.code.to_i
     when 200
-      # As Ruby does not recognizes "string" as a json-object
       return JSON.parse( resp.body )
-      #return resp.body.delete("\"")
     when 201
       return
     when 404
@@ -185,12 +182,11 @@ class RestAuthUser < RestAuthResource
     end
   end
 
-=begin
-  Create a new property for this user. 
-  
-  This method fails if the property already existed. Use {@link
-  set_property} if you do not care if the property already exists.
-=end
+  ##
+  # Create a new property for this user. 
+  # 
+  # This method fails if the property already existed. Use {@link
+  # set_property} if you do not care if the property already exists.
   def create_property( propname, value )
     params = { 'prop' => propname, 'value' => value }
     resp = conn.post( '/users/'+name+'/props/', params )
@@ -207,22 +203,18 @@ class RestAuthUser < RestAuthResource
     end
   end
 
-=begin
-  Get the given property for this user. 
-  
-  <b>Note:</b> Each call to this function causes an HTTP request to 
-  the RestAuth service. If you want to get many properties, consider
-  using {@link get_properties}.
-=end
+  ##
+  # Get the given property for this user. 
+  # 
+  # <b>Note:</b> Each call to this function causes an HTTP request to 
+  # the RestAuth service. If you want to get many properties, consider
+  # using {@link get_properties}.
   def get_property( propname )
     resp = conn.get('/users/'+name+'/props/'+propname+'/')
-    #resp = conn.get('/users/'+name+'/props/'+propname+'/', headers = {'Content-Type' => 'application/x-www-form-urlencoded'})
     
     case resp.code.to_i
     when 200
-      # As Ruby does not recognizes "string" as a json-object
       return JSON.parse( resp.body )
-      #return resp.body.delete("\"")
     when 404
       case resp.header['resource-type']
       when 'user'
@@ -237,9 +229,8 @@ class RestAuthUser < RestAuthResource
     end
   end
 
-=begin
-  Delete the named property.
-=end
+  ##
+  # Delete the named property.
   def del_property( propname )
     resp = conn.delete('/users/'+name+'/props/'+propname+'/')
     

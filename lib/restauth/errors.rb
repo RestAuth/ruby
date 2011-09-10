@@ -1,3 +1,5 @@
+##
+# Template for RestAuthExceptions
 class RestAuthException < Exception
   private_class_method :new
   def RestAuthException.inherited(subclass)
@@ -9,11 +11,8 @@ class RestAuthException < Exception
   end
 end
 
-=begin
-Superclass for exceptions thrown when a resource queried is not found.
-
-@package ruby-restauth
-=end
+##
+# Superclass for exceptions thrown when a resource queried is not found.
 class RestAuthResourceNotFound < RestAuthException
   private_class_method :new
   def RestAuthResourceNotFound.inherited(subclass)
@@ -22,12 +21,9 @@ class RestAuthResourceNotFound < RestAuthException
   @code = 404
 end
 
-=begin
-Superclass of exceptions thrown when a resource is supposed to be created but
-already exists.
-
-@package ruby-restauth
-=end
+##
+# Superclass of exceptions thrown when a resource is supposed to be created but
+# already exists.
 class RestAuthResourceConflict < RestAuthException
   private_class_method :new
   def RestAuthResourceConflict.inherited(subclass)
@@ -36,48 +32,33 @@ class RestAuthResourceConflict < RestAuthException
   @code = 409
 end
 
-=begin
-Exception thrown when a response was unparsable.
-
-@package ruby-restauth
-=end
+##
+# Exception thrown when a response was unparsable.
 class RestAuthBadResponse < RestAuthException
 end
 
-=begin
-Superclass for service-related errors.
-
-@package ruby-restauth
-=end
+##
+# Superclass for service-related errors.
 class RestAuthInternalException < RestAuthException
 end
 
-=begin
-Thrown when the RestAuth service cannot parse the HTTP request. On a protocol
-level, this corresponds to a HTTP status code 400.
-
-@package ruby-restauth
-=end
+##
+# Thrown when the RestAuth service cannot parse the HTTP request. On a protocol
+# level, this corresponds to a HTTP status code 400.
 class RestAuthBadRequest < RestAuthInternalException
   @code = 400
 end
 
-=begin
-Thrown when the RestAuth service suffers an internal error. On a protocol
-level, this corresponds to a HTTP status code 500.
-
-@package ruby-restauth
-=end
+##
+# Thrown when the RestAuth service suffers an internal error. On a protocol
+# level, this corresponds to a HTTP status code 500.
 class RestAuthInternalServerError < RestAuthInternalException
   @code = 500
 end
 
-=begin
-Thrown when an unknown HTTP status code is encountered. This should never
-really happen and usually indicates a bug in the library.
-
-@package ruby-restauth
-=end
+##
+# Thrown when an unknown HTTP status code is encountered. This should never
+# really happen and usually indicates a bug in the library.
 class RestAuthUnknownStatus < RestAuthInternalException
   def initialize ( response )
     super
@@ -85,23 +66,17 @@ class RestAuthUnknownStatus < RestAuthInternalException
   end
 end
 
-=begin
-Thrown when you send unacceptable data to the RestAuth service, i.e. a
-password that is too short.
-
-@package ruby-restauth
-=end
+##
+# Thrown when you send unacceptable data to the RestAuth service, i.e. a
+# password that is too short.
 class RestAuthPreconditionFailed < RestAuthException
   @code = 412
 end
 
-=begin
-Thrown when the user/password does not match the registered service.
-
-On a protocol level, this corresponds to the HTTP status code 401.
-
-@package ruby-restauth
-=end
+##
+# Thrown when the user/password does not match the registered service.
+# 
+# On a protocol level, this corresponds to the HTTP status code 401.
 class RestAuthUnauthorized < RestAuthException
   @code = 401
 end

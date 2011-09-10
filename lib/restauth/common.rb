@@ -5,15 +5,21 @@ Net::HTTP.version_1_2
 
 RootCA = '/etc/ssl/certs'
 
+##
+# This class contains all directly HTTP-related code
 class RestAuthConnection
   @@connection = nil
   
+  ##
+  # initialize RestAuthConnection instance
   def initialize ( host, validate_ssl=true )
     @host = host.gsub(/[#{'\/'}]+$/, '')
     @validate_ssl = validate_ssl
     #puts 'DEBUG Initialized RestAuthConnection'
   end
   
+  ##
+  # returns the static connection
   def get_connection( host=@host, validate_ssl=@validate_ssl )
     if ! defined?(@@connection)
       @@connection = RestAuthConnection.new( host, validate_ssl )
@@ -21,7 +27,9 @@ class RestAuthConnection
     #puts 'CALLINFO RestAuthConnection::get_connection called'
     return @@connection
   end
-  
+
+  ##
+  # sends a http request to the RestAuth-Authentication-Server
   def send( request )
     # add headers present with all methods
     
@@ -180,6 +188,8 @@ class RestAuthConnection
   end
 end
 
+##
+# This class contains wrappers for http methods
 class RestAuthResource
   @conn = nil
  
