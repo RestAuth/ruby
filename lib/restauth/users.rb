@@ -29,7 +29,7 @@ class RestAuthUser < RestAuthResource
 
   ##
   # Factory method that creates a new user in the RestAuth database and
-  # throws {@link RestAuthUserExists} if the user already exists.
+  # throws RestAuthUserExists if the user already exists.
   def self.create( name, password, conn )
     params = { 'user' => name, 'password' => password }
     resp = conn.post( '/users/', params )
@@ -48,7 +48,7 @@ class RestAuthUser < RestAuthResource
 
   ##
   # Factory method that gets an existing user from RestAuth. This method
-  # verifies that the user exists and throws {@link RestAuthUserNotFound}
+  # verifies that the user exists and throws RestAuthUserNotFound
   # if not.
   def self.get( name, conn )
     resp = conn.get( '/users/'+name+'/' )
@@ -85,7 +85,7 @@ class RestAuthUser < RestAuthResource
   # RestAuth. 
   #
   #<b>Note:</b> The constructor does not verify if the user exists, use
-  #{@link get} or {@link get_all} if you wan't to be sure it exists.
+  # get or get_all if you wan't to be sure it exists.
   def initialize( name, conn )
     @conn = conn
     # RestAuth >> Server: Bug #6
@@ -185,8 +185,8 @@ class RestAuthUser < RestAuthResource
   ##
   # Create a new property for this user. 
   # 
-  # This method fails if the property already existed. Use {@link
-  # set_property} if you do not care if the property already exists.
+  # This method fails if the property already existed. Use set_property
+  # if you do not care if the property already exists.
   def create_property( propname, value )
     params = { 'prop' => propname, 'value' => value }
     resp = conn.post( '/users/'+name+'/props/', params )
@@ -208,7 +208,7 @@ class RestAuthUser < RestAuthResource
   # 
   # <b>Note:</b> Each call to this function causes an HTTP request to 
   # the RestAuth service. If you want to get many properties, consider
-  # using {@link get_properties}.
+  # using get_properties.
   def get_property( propname )
     resp = conn.get('/users/'+name+'/props/'+propname+'/')
     
